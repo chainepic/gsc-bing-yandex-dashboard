@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DigestActions } from "@/components/DigestActions";
 import { getSettings } from "@/server/settings";
@@ -33,7 +34,19 @@ export default function DigestPage() {
             </pre>
           </article>
         ))}
-        {!rows.length && <p className="text-sm text-ink/60">No digests yet.</p>}
+        {!rows.length && (
+          <div className="space-y-2 text-sm text-ink/60">
+            <p>No digests yet. Sync sites first, then generate here — or wait for the daily cron.</p>
+            <p className="flex flex-wrap gap-3">
+              <Link href="/settings" className="text-accent underline decoration-line underline-offset-2">
+                Notifications &amp; sync →
+              </Link>
+              <Link href="/guide" className="text-ink/55 underline decoration-line underline-offset-2 hover:text-accent">
+                Guide
+              </Link>
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

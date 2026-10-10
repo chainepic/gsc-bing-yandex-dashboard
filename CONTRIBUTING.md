@@ -12,6 +12,7 @@ Thanks for helping with [gsc-bing-yandex-dashboard](https://github.com/chainepic
 - `pnpm dev` — Next.js on port 3847
 - `pnpm lint` — typecheck all packages
 - `pnpm build` — connectors → core → web
+- `pnpm test:smoke` — panel auth unit smoke (+ optional `BASE_URL` live check)
 
 ## Pull requests
 

@@ -18,6 +18,9 @@ ENV DATA_DIR=/data
 RUN pnpm build
 
 RUN mkdir -p /data
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3847
 VOLUME ["/data"]
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["pnpm", "--filter", "@search-triad/web", "start"]

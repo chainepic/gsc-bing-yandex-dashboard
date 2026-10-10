@@ -99,13 +99,15 @@ export function siteDetail(host: string) {
       .where(and(eq(metricDaily.engine, site.engine), eq(metricDaily.siteId, site.id)))
       .all()
       .sort((a, b) => a.date.localeCompare(b.date));
-    const keywords = getDb()
+    const snapshots = getDb()
       .select()
       .from(keywordSnapshot)
       .where(and(eq(keywordSnapshot.engine, site.engine), eq(keywordSnapshot.siteId, site.id)))
       .all()
       .sort((a, b) => Math.abs(b.clickDelta) - Math.abs(a.clickDelta));
-    return { site, daily, keywords };
+    const keywords = snapshots.filter((s) => (s.kind || "query") === "query");
+    const pages = snapshots.filter((s) => s.kind === "page");
+    return { site, daily, keywords, pages };
   });
   return engines;
 }
@@ -114,9 +116,33 @@ export function listKeywords(limit = 200) {
   return getDb()
     .select()
     .from(keywordSnapshot)
+    .where(eq(keywordSnapshot.kind, "query"))
     .orderBy(desc(sql`abs(${keywordSnapshot.clickDelta})`))
     .limit(limit)
     .all();
+}
+
+export type SyncRunDetail = {
+  total: number;
+  completed: number;
+  ok: number;
+  errors: Array<{ engine: string; host: string; propertyId?: string; message: string }>;
+};
+
+export function parseSyncDetail(detailJson: string | null | undefined): SyncRunDetail | null {
+  if (!detailJson) return null;
+  try {
+    const parsed = JSON.parse(detailJson) as SyncRunDetail;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      total: Number(parsed.total) || 0,
+      completed: Number(parsed.completed) || 0,
+      ok: Number(parsed.ok) || 0,
+      errors: Array.isArray(parsed.errors) ? parsed.errors : [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function latestSync() {

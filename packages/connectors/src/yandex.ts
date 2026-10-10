@@ -16,14 +16,75 @@ async function yandexFetch(token: string, path: string, userId?: number | string
   return text ? JSON.parse(text) : {};
 }
 
+export type YandexTokenResponse = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  token_type?: string;
+};
+
+/** Authorization-code flow (preferred — yields refresh_token). */
 export function buildYandexAuthUrl(clientId: string, redirectUri: string) {
   const qs = new URLSearchParams({
-    response_type: "token",
+    response_type: "code",
     client_id: clientId,
     redirect_uri: redirectUri,
+    force_confirm: "yes",
     scope: "webmaster:hostinfo webmaster:verify",
   });
   return `https://oauth.yandex.com/authorize?${qs.toString()}`;
+}
+
+async function yandexTokenRequest(body: URLSearchParams): Promise<YandexTokenResponse> {
+  const response = await fetch("https://oauth.yandex.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Yandex token HTTP ${response.status}: ${text.slice(0, 220)}`);
+  }
+  const data = JSON.parse(text) as YandexTokenResponse;
+  if (!data.access_token) throw new Error("Yandex token response missing access_token");
+  return {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_in: Number(data.expires_in) || 3600,
+    token_type: data.token_type,
+  };
+}
+
+export async function exchangeYandexCode(
+  clientId: string,
+  clientSecret: string,
+  redirectUri: string,
+  code: string
+): Promise<YandexTokenResponse> {
+  return yandexTokenRequest(
+    new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+    })
+  );
+}
+
+export async function refreshYandexToken(
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string
+): Promise<YandexTokenResponse> {
+  return yandexTokenRequest(
+    new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+    })
+  );
 }
 
 export async function getYandexUserId(token: string): Promise<number> {

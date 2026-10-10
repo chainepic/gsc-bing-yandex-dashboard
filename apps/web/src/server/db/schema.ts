@@ -24,6 +24,8 @@ export const syncRuns = sqliteTable("sync_runs", {
   finishedAt: text("finished_at"),
   status: text("status").notNull(), // running | ok | error
   message: text("message"),
+  /** JSON: { total, completed, errors: Array<{ engine, host, message }> } */
+  detailJson: text("detail_json"),
 });
 
 export const metricDaily = sqliteTable(
@@ -50,7 +52,10 @@ export const keywordSnapshot = sqliteTable(
     siteId: integer("site_id").notNull(),
     host: text("host").notNull(),
     asOf: text("as_of").notNull(),
+    /** query text or page URL */
     query: text("query").notNull(),
+    /** query | page */
+    kind: text("kind").notNull().default("query"),
     clicks: integer("clicks").notNull().default(0),
     impressions: integer("impressions").notNull().default(0),
     ctr: real("ctr").notNull().default(0),
@@ -59,7 +64,7 @@ export const keywordSnapshot = sqliteTable(
     impressionDelta: integer("impression_delta").notNull().default(0),
     window: text("window").notNull().default("week"),
   },
-  (t) => [uniqueIndex("keyword_snap_unique").on(t.engine, t.siteId, t.asOf, t.query, t.window)]
+  (t) => [uniqueIndex("keyword_snap_unique").on(t.engine, t.siteId, t.asOf, t.query, t.window, t.kind)]
 );
 
 export const digests = sqliteTable("digests", {

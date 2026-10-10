@@ -54,7 +54,19 @@ export default function SitesPage() {
             ))}
           </tbody>
         </table>
-        {!rows.length && <p className="text-sm text-ink/60">No sites yet. Finish setup and run a sync.</p>}
+        {!rows.length && (
+          <div className="space-y-2 text-sm text-ink/60">
+            <p>No sites yet. Connect engines, select properties in Setup, then run a sync.</p>
+            <p className="flex flex-wrap gap-3">
+              <Link href="/setup" className="text-accent underline decoration-line underline-offset-2">
+                Open Setup →
+              </Link>
+              <Link href="/guide" className="text-ink/55 underline decoration-line underline-offset-2 hover:text-accent">
+                Guide
+              </Link>
+            </p>
+          </div>
+        )}
       </section>
       <p className="text-xs text-ink/50">{hosts.length} hosts · {rows.length} engine bindings</p>
     </div>

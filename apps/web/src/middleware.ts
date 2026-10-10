@@ -1,18 +1,31 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getPanelAuthFromEnv, isAuthorizedBasic, isPublicPath } from "@/lib/panel-auth";
 
 export function middleware(req: NextRequest) {
-  // Soft gate: setup completion is checked in pages via API; allow public assets & setup & oauth callbacks
   const { pathname } = req.nextUrl;
-  if (
-    pathname.startsWith("/setup") ||
-    pathname.startsWith("/api/") ||
-    pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico"
-  ) {
+
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
-  return NextResponse.next();
+
+  const creds = getPanelAuthFromEnv();
+  if (!creds) {
+    // Auth unset → localhost/LAN friendly (no gate). Set PANEL_PASSWORD or BASIC_AUTH_* for public deploy.
+    return NextResponse.next();
+  }
+
+  if (isAuthorizedBasic(req.headers.get("authorization"), creds)) {
+    return NextResponse.next();
+  }
+
+  return new NextResponse("Authentication required", {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": 'Basic realm="Search Triad", charset="UTF-8"',
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 export const config = {

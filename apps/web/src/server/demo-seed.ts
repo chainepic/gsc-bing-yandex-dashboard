@@ -72,6 +72,7 @@ export function seedDemoData() {
           host,
           asOf: asOfStr,
           query: item.q,
+          kind: "query",
           clicks: 40 + Math.abs(item.delta),
           impressions: 900,
           ctr: 0.04,
@@ -87,11 +88,52 @@ export function seedDemoData() {
             keywordSnapshot.asOf,
             keywordSnapshot.query,
             keywordSnapshot.window,
+            keywordSnapshot.kind,
           ],
           set: {
             clicks: 40 + Math.abs(item.delta),
             clickDelta: item.delta,
             host,
+            kind: "query",
+          },
+        })
+        .run();
+    }
+    const pages = [
+      { q: "https://example.com/pricing", delta: 15 },
+      { q: "https://example.com/docs/api", delta: -11 },
+    ];
+    for (const item of pages) {
+      db.insert(keywordSnapshot)
+        .values({
+          engine,
+          siteId,
+          host,
+          asOf: asOfStr,
+          query: item.q,
+          kind: "page",
+          clicks: 30 + Math.abs(item.delta),
+          impressions: 600,
+          ctr: 0.05,
+          position: 9,
+          clickDelta: item.delta,
+          impressionDelta: item.delta * 8,
+          window: "week",
+        })
+        .onConflictDoUpdate({
+          target: [
+            keywordSnapshot.engine,
+            keywordSnapshot.siteId,
+            keywordSnapshot.asOf,
+            keywordSnapshot.query,
+            keywordSnapshot.window,
+            keywordSnapshot.kind,
+          ],
+          set: {
+            clicks: 30 + Math.abs(item.delta),
+            clickDelta: item.delta,
+            host,
+            kind: "page",
           },
         })
         .run();

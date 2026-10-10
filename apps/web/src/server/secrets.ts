@@ -35,10 +35,18 @@ export type AppSecrets = {
   };
 };
 
+const INSECURE_APP_SECRET_PLACEHOLDERS = new Set([
+  "change-me-to-a-long-random-string-at-least-32-chars",
+  "change-me",
+]);
+
 function appSecret() {
   const s = process.env.APP_SECRET;
   if (!s || s.length < 16) {
     throw new Error("APP_SECRET must be set (min 16 chars)");
+  }
+  if (INSECURE_APP_SECRET_PLACEHOLDERS.has(s)) {
+    throw new Error("APP_SECRET still uses the insecure example placeholder; set a unique secret");
   }
   return crypto.createHash("sha256").update(s).digest();
 }
@@ -105,7 +113,7 @@ export function secretsStatus() {
   return {
     google: Boolean(s.google?.refreshToken || s.google?.serviceAccountJson),
     bing: Boolean(s.bing?.apiKey),
-    yandex: Boolean(s.yandex?.accessToken),
+    yandex: Boolean(s.yandex?.accessToken || s.yandex?.refreshToken),
     webhook: Boolean(s.notify?.webhookUrl),
     smtp: Boolean(s.notify?.smtp?.host && s.notify?.smtp?.to),
   };

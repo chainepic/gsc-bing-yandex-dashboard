@@ -28,8 +28,10 @@ pnpm dev
 
 ```bash
 cp .env.example .env
-docker compose up --build
+APP_SECRET=$(openssl rand -hex 32) PANEL_PASSWORD='你的面板密码' docker compose up --build
 ```
+
+健康检查（无需登录）：`GET /api/health`。公网部署请设置 `PANEL_PASSWORD` 或反向代理 Basic Auth。
 
 ## 三引擎凭证
 

@@ -34,35 +34,41 @@ function rebuildWindowsFromDb(): Record<EngineId, SiteWindowStats[]> {
       clicks: priorDates.reduce((s, d) => s + d.clicks, 0),
       impressions: priorDates.reduce((s, d) => s + d.impressions, 0),
     };
-    const keywords = db
+    const snapshots = db
       .select()
       .from(keywordSnapshot)
       .where(and(eq(keywordSnapshot.engine, engine), eq(keywordSnapshot.siteId, site.id)))
       .all();
-    const queryGains = keywords
+    const toRow = (k: (typeof snapshots)[number]) => ({
+      key: k.query,
+      clicks: k.clicks,
+      impressions: k.impressions,
+      position: k.position,
+      clickDelta: k.clickDelta,
+      impressionDelta: k.impressionDelta,
+    });
+    const queries = snapshots.filter((k) => (k.kind || "query") === "query");
+    const pages = snapshots.filter((k) => k.kind === "page");
+    const queryGains = queries
       .filter((k) => k.clickDelta > 0)
       .sort((a, b) => b.clickDelta - a.clickDelta)
       .slice(0, 10)
-      .map((k) => ({
-        key: k.query,
-        clicks: k.clicks,
-        impressions: k.impressions,
-        position: k.position,
-        clickDelta: k.clickDelta,
-        impressionDelta: k.impressionDelta,
-      }));
-    const queryLosses = keywords
+      .map(toRow);
+    const queryLosses = queries
       .filter((k) => k.clickDelta < 0)
       .sort((a, b) => a.clickDelta - b.clickDelta)
       .slice(0, 10)
-      .map((k) => ({
-        key: k.query,
-        clicks: k.clicks,
-        impressions: k.impressions,
-        position: k.position,
-        clickDelta: k.clickDelta,
-        impressionDelta: k.impressionDelta,
-      }));
+      .map(toRow);
+    const pageGains = pages
+      .filter((k) => k.clickDelta > 0)
+      .sort((a, b) => b.clickDelta - a.clickDelta)
+      .slice(0, 10)
+      .map(toRow);
+    const pageLosses = pages
+      .filter((k) => k.clickDelta < 0)
+      .sort((a, b) => a.clickDelta - b.clickDelta)
+      .slice(0, 10)
+      .map(toRow);
 
     byEngine[engine].push({
       host: site.host,
@@ -82,8 +88,8 @@ function rebuildWindowsFromDb(): Record<EngineId, SiteWindowStats[]> {
       })),
       queryGains,
       queryLosses,
-      pageGains: [],
-      pageLosses: [],
+      pageGains,
+      pageLosses,
     });
   }
   return byEngine;

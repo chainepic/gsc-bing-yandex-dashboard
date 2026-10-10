@@ -2,6 +2,12 @@ export function fmt(n: number) {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
+/** Fraction 0–1 → percentage string (e.g. 0.042 → "4.2%"). */
+export function pct(n: number) {
+  if (!Number.isFinite(n)) return "—";
+  return `${(n * 100).toFixed(1)}%`;
+}
+
 export function Delta({ value }: { value: number }) {
   const cls = value > 0 ? "delta-up" : value < 0 ? "delta-down" : "text-ink/50";
   const sign = value > 0 ? "+" : "";

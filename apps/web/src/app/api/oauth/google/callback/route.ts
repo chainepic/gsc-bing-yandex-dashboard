@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { exchangeGscCode, listGscSites } from "@search-triad/connectors";
+import { exchangeGscCode } from "@search-triad/connectors";
 import { loadSecrets, mergeSecrets } from "@/server/secrets";
-import { upsertSites } from "@/server/queries";
 
 export const runtime = "nodejs";
 
@@ -30,21 +29,7 @@ export async function GET(req: Request) {
         refreshToken: tokens.refresh_token || secrets.google?.refreshToken,
       },
     });
-    const sites = await listGscSites({
-      kind: "oauth",
-      clientId,
-      clientSecret,
-      refreshToken: tokens.refresh_token || secrets.google!.refreshToken!,
-    });
-    upsertSites(
-      sites.map((s) => ({
-        engine: "gsc" as const,
-        host: s.host,
-        propertyId: s.siteUrl,
-        enabled: true,
-        label: s.label,
-      }))
-    );
+    // Sites are listed in the setup wizard for checkbox selection — do not auto-upsert all properties.
     return NextResponse.redirect(new URL("/setup?google=ok", url.origin));
   } catch (e) {
     return NextResponse.redirect(

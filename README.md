@@ -116,10 +116,12 @@ Open **http://localhost:3847/setup**.
 
 ```bash
 cp .env.example .env
-docker compose up --build
+# Required: set a unique APP_SECRET (Compose refuses empty / placeholder defaults)
+# Recommended for public hosts: also set PANEL_PASSWORD
+APP_SECRET=$(openssl rand -hex 32) PANEL_PASSWORD='your-panel-password' docker compose up --build
 ```
 
-Data persists in **`./data`**.
+Data persists in **`./data`**. Health probe: **`GET /api/health`** (no auth).
 
 ### Demo data
 
@@ -161,9 +163,38 @@ pnpm dev
 
 ## Security
 
-- Strong `APP_SECRET` before saving credentials
+- Strong unique `APP_SECRET` before saving credentials (Docker entrypoint rejects empty / example placeholders)
+- Optional panel **Basic Auth** — set `PANEL_PASSWORD` (user `admin`) or `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD`. When unset, the app stays open for localhost/LAN. When set, the whole UI and API are gated (except `/api/health`)
 - Never commit `data/`, `.env`, or production keys
-- Put the panel behind VPN or authenticated reverse proxy if exposed publicly
+- Prefer VPN **or** reverse-proxy auth in front of the panel on the public internet
+
+### Reverse proxy (optional)
+
+Terminate TLS and/or add another auth layer in front of port `3847`:
+
+**Caddy**
+
+```caddy
+panel.example.com {
+  reverse_proxy 127.0.0.1:3847
+  # basicauth is optional if PANEL_PASSWORD is already set in the app
+}
+```
+
+**nginx**
+
+```nginx
+location / {
+  proxy_pass http://127.0.0.1:3847;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  # auth_basic "Search Triad";
+  # auth_basic_user_file /etc/nginx/htpasswd;
+}
+```
+
+Smoke check: `pnpm test:smoke` (add `BASE_URL=http://127.0.0.1:3847` for a live probe).
 
 ## License
 

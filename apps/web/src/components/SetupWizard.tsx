@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type SiteOption = { engine: string; host: string; siteUrl: string; label?: string };
@@ -50,14 +51,32 @@ export function SetupWizard({ initialSettings, status }: Props) {
     [options, selected]
   );
 
+  const optionsForStep = useMemo(() => {
+    if (step === 1) return options.filter((o) => o.engine === "gsc");
+    if (step === 2) return options.filter((o) => o.engine === "bing");
+    if (step === 3) return options;
+    return [];
+  }, [options, step]);
+
   useEffect(() => {
     const err = search.get("error");
     if (err) setMsg(err);
     if (search.get("google") === "ok") {
       setGConnected(true);
       setStep(1);
-      setMsg("Google connected. Sites were saved; continue to Bing or finish later from Yandex step to multi-select.");
+      setMsg("Google connected. Check the properties to monitor, then continue — nothing is saved until you finish or save selection.");
       fetch("/api/engines/gsc/sites")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.sites) mergeOptions(data.sites);
+        })
+        .catch(() => undefined);
+    }
+    if (search.get("yandex") === "ok") {
+      setYConnected(true);
+      setStep(3);
+      setMsg("Yandex connected (refresh token stored). Check hosts to monitor, then finish.");
+      fetch("/api/engines/yandex/sites")
         .then((r) => r.json())
         .then((data) => {
           if (data.sites) mergeOptions(data.sites);
@@ -115,7 +134,7 @@ export function SetupWizard({ initialSettings, status }: Props) {
       if (!list.ok) throw new Error(listData.error || "List sites failed");
       mergeOptions(listData.sites || []);
       setGConnected(true);
-      setMsg(`Loaded ${(listData.sites || []).length} Google properties`);
+      setMsg(`Loaded ${(listData.sites || []).length} Google properties — select which to keep.`);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
@@ -139,7 +158,7 @@ export function SetupWizard({ initialSettings, status }: Props) {
       if (!list.ok) throw new Error(listData.error || "List sites failed");
       mergeOptions(listData.sites || []);
       setBingConnected(true);
-      setMsg(`Loaded ${(listData.sites || []).length} Bing sites`);
+      setMsg(`Loaded ${(listData.sites || []).length} Bing sites — select which to keep.`);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
@@ -169,8 +188,7 @@ export function SetupWizard({ initialSettings, status }: Props) {
         const auth = await fetch("/api/oauth/yandex/start");
         const authData = await auth.json();
         if (!auth.ok) throw new Error(authData.error || "OAuth start failed");
-        window.open(authData.url, "_blank", "noopener,noreferrer");
-        setMsg("Authorize in the opened window, paste the access_token below, then Connect again.");
+        window.location.href = authData.url;
         return;
       }
 
@@ -179,7 +197,7 @@ export function SetupWizard({ initialSettings, status }: Props) {
       if (!list.ok) throw new Error(listData.error || "List hosts failed");
       mergeOptions(listData.sites || []);
       setYConnected(true);
-      setMsg(`Loaded ${(listData.sites || []).length} Yandex hosts`);
+      setMsg(`Loaded ${(listData.sites || []).length} Yandex hosts — select which to keep.`);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
@@ -191,14 +209,44 @@ export function SetupWizard({ initialSettings, status }: Props) {
     setOptions((prev) => {
       const map = new Map(prev.map((p) => [`${p.engine}:${p.siteUrl}`, p]));
       for (const s of incoming) map.set(`${s.engine}:${s.siteUrl}`, s);
-      const next = [...map.values()];
-      setSelected((sel) => {
-        const copy = { ...sel };
-        for (const s of incoming) copy[`${s.engine}:${s.siteUrl}`] = true;
-        return copy;
-      });
-      return next;
+      return [...map.values()];
     });
+    setSelected((sel) => {
+      const copy = { ...sel };
+      for (const s of incoming) {
+        const key = `${s.engine}:${s.siteUrl}`;
+        if (copy[key] === undefined) copy[key] = true;
+      }
+      return copy;
+    });
+  }
+
+  async function saveSelectionOnly() {
+    setBusy(true);
+    setMsg("");
+    try {
+      if (!selectedList.length) throw new Error("Select at least one site");
+      const res = await fetch("/api/sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sites: selectedList.map((s) => ({
+            engine: s.engine,
+            host: s.host,
+            propertyId: s.siteUrl,
+            enabled: true,
+            label: s.label,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save sites failed");
+      setMsg(`Saved ${selectedList.length} selected sites.`);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function finish() {
@@ -238,11 +286,81 @@ export function SetupWizard({ initialSettings, status }: Props) {
     }
   }
 
+  function SitePicker({ list, showAllEngines }: { list: SiteOption[]; showAllEngines?: boolean }) {
+    if (!list.length) return null;
+    return (
+      <div className="mt-4 space-y-2 border-t border-line pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-medium">Select sites to monitor</h3>
+          <div className="flex gap-2 text-xs">
+            <button
+              type="button"
+              className="text-accent"
+              onClick={() =>
+                setSelected((sel) => {
+                  const copy = { ...sel };
+                  for (const o of list) copy[`${o.engine}:${o.siteUrl}`] = true;
+                  return copy;
+                })
+              }
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              className="text-ink/55"
+              onClick={() =>
+                setSelected((sel) => {
+                  const copy = { ...sel };
+                  for (const o of list) copy[`${o.engine}:${o.siteUrl}`] = false;
+                  return copy;
+                })
+              }
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <ul className="max-h-64 space-y-1 overflow-auto text-sm">
+          {list.map((o) => {
+            const key = `${o.engine}:${o.siteUrl}`;
+            return (
+              <li key={key} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={Boolean(selected[key])}
+                  onChange={(e) => setSelected((s) => ({ ...s, [key]: e.target.checked }))}
+                />
+                {(showAllEngines || step === 3) && <span className="uppercase text-ink/50">{o.engine}</span>}
+                <span className="truncate">{o.host}</span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex flex-wrap gap-2">
+          <button disabled={busy} onClick={saveSelectionOnly} className="border border-line px-3 py-1.5 text-sm">
+            Save selection ({list.filter((o) => selected[`${o.engine}:${o.siteUrl}`]).length})
+          </button>
+          {step === 3 && (
+            <button disabled={busy} onClick={finish} className="bg-accent px-3 py-1.5 text-sm text-paper">
+              Finish setup ({selectedList.length} sites)
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-8">
       <header>
         <p className="font-display text-4xl tracking-tight">GSC · Bing · Yandex</p>
         <p className="mt-2 text-ink/65">Connect Google Search Console, Bing Webmaster Tools, and Yandex Webmaster.</p>
+        <p className="mt-3 text-sm">
+          <Link href="/guide" className="text-accent underline decoration-line underline-offset-2">
+            How to use this panel →
+          </Link>
+        </p>
       </header>
 
       <ol className="flex flex-wrap gap-2 text-sm">
@@ -317,6 +435,7 @@ export function SetupWizard({ initialSettings, status }: Props) {
               </button>
             )}
           </div>
+          <SitePicker list={optionsForStep} />
         </section>
       )}
 
@@ -337,49 +456,30 @@ export function SetupWizard({ initialSettings, status }: Props) {
               </button>
             )}
           </div>
+          <SitePicker list={optionsForStep} />
         </section>
       )}
 
       {step === 3 && (
         <section className="panel space-y-3 p-5">
           <h2 className="font-display text-xl">Yandex Webmaster</h2>
-          <p className="text-xs text-ink/55">Scopes: webmaster:hostinfo, webmaster:verify</p>
+          <p className="text-xs text-ink/55">
+            Authorization code flow stores a refresh token. Optional: paste an existing access token instead.
+            Scopes: webmaster:hostinfo, webmaster:verify
+          </p>
           <input className="w-full border border-line bg-paper px-3 py-2 text-sm" placeholder="Client ID" value={yClientId} onChange={(e) => setYClientId(e.target.value)} />
           <input className="w-full border border-line bg-paper px-3 py-2 text-sm" placeholder="Client secret" value={yClientSecret} onChange={(e) => setYClientSecret(e.target.value)} />
-          <input className="w-full border border-line bg-paper px-3 py-2 text-sm" placeholder="Access token (after browser authorize)" value={yToken} onChange={(e) => setYToken(e.target.value)} />
+          <input className="w-full border border-line bg-paper px-3 py-2 text-sm" placeholder="Access token (optional manual paste)" value={yToken} onChange={(e) => setYToken(e.target.value)} />
           <div className="flex flex-wrap gap-2">
             <button disabled={busy} onClick={saveYandex} className="bg-accent px-3 py-1.5 text-sm text-paper">
-              {yToken ? "Connect & list hosts" : "Open authorize URL"}
+              {yToken ? "Connect & list hosts" : "Save & authorize"}
             </button>
             <button disabled={busy} onClick={finish} className="border border-line px-3 py-1.5 text-sm">
               Skip & finish
             </button>
           </div>
 
-          {options.length > 0 && (
-            <div className="mt-4 space-y-2 border-t border-line pt-4">
-              <h3 className="text-sm font-medium">Select sites to monitor</h3>
-              <ul className="max-h-64 space-y-1 overflow-auto text-sm">
-                {options.map((o) => {
-                  const key = `${o.engine}:${o.siteUrl}`;
-                  return (
-                    <li key={key} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(selected[key])}
-                        onChange={(e) => setSelected((s) => ({ ...s, [key]: e.target.checked }))}
-                      />
-                      <span className="uppercase text-ink/50">{o.engine}</span>
-                      <span>{o.host}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <button disabled={busy} onClick={finish} className="bg-accent px-3 py-1.5 text-sm text-paper">
-                Finish setup ({selectedList.length} sites)
-              </button>
-            </div>
-          )}
+          <SitePicker list={optionsForStep} showAllEngines />
           {(gConnected || bingConnected || yConnected) && !options.length && (
             <button disabled={busy} onClick={finish} className="bg-accent px-3 py-1.5 text-sm text-paper">
               Finish setup

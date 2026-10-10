@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { SettingsForm } from "@/components/SettingsForm";
 import { getSettings } from "@/server/settings";
 import { secretsStatus } from "@/server/secrets";
-import { latestSync, listSites } from "@/server/queries";
+import { latestSync, listSites, parseSyncDetail } from "@/server/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,16 @@ export default function SettingsPage() {
         initialSettings={settings}
         status={status}
         sites={sites}
-        lastSync={sync ? { status: sync.status, message: sync.message, at: sync.finishedAt || sync.startedAt } : null}
+        lastSync={
+          sync
+            ? {
+                status: sync.status,
+                message: sync.message,
+                at: sync.finishedAt || sync.startedAt,
+                detail: parseSyncDetail(sync.detailJson),
+              }
+            : null
+        }
       />
     </div>
   );

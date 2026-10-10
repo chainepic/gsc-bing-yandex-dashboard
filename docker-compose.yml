@@ -4,10 +4,21 @@ services:
     ports:
       - "3847:3847"
     environment:
-      APP_SECRET: ${APP_SECRET:-change-me-to-a-long-random-string-at-least-32-chars}
+      # Required — no insecure default. Example: APP_SECRET=$(openssl rand -hex 32)
+      APP_SECRET: ${APP_SECRET:?Set APP_SECRET to a random string of at least 16 characters}
       DATA_DIR: /data
       TZ: ${TZ:-Asia/Shanghai}
       PORT: 3847
+      # Optional panel Basic Auth (recommended for any public / WAN exposure)
+      PANEL_PASSWORD: ${PANEL_PASSWORD:-}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
     volumes:
       - ./data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3847/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped

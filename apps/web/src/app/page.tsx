@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Delta, EngineBadge, Sparkline, fmt } from "@/components/Stat";
+import { FirstRunPanel } from "@/components/FirstRunPanel";
+import { Delta, EngineBadge, Sparkline, fmt, pct } from "@/components/Stat";
+import { getOnboardingProgress } from "@/lib/onboarding";
 import { getSettings } from "@/server/settings";
 import { latestSync, overviewMetrics, siteComparison } from "@/server/queries";
 
@@ -8,9 +10,12 @@ export const dynamic = "force-dynamic";
 
 function rollup(rows: Array<{ engine: string; date: string; clicks: number; impressions: number }>, engine: string, days: number) {
   const slice = rows.filter((r) => r.engine === engine).slice(-days);
+  const clicks = slice.reduce((s, r) => s + Number(r.clicks), 0);
+  const impressions = slice.reduce((s, r) => s + Number(r.impressions), 0);
   return {
-    clicks: slice.reduce((s, r) => s + Number(r.clicks), 0),
-    impressions: slice.reduce((s, r) => s + Number(r.impressions), 0),
+    clicks,
+    impressions,
+    ctr: impressions > 0 ? clicks / impressions : 0,
     series: slice.map((r) => Number(r.clicks)),
   };
 }
@@ -18,6 +23,11 @@ function rollup(rows: Array<{ engine: string; date: string; clicks: number; impr
 export default function OverviewPage() {
   const settings = getSettings();
   if (!settings.setupComplete) redirect("/setup");
+
+  const progress = getOnboardingProgress();
+  if (progress.needsFirstRunHelp) {
+    return <FirstRunPanel progress={progress} />;
+  }
 
   const metrics = overviewMetrics(28);
   const sites = siteComparison();
@@ -61,11 +71,16 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <section>
-        <h1 className="font-display text-2xl">Overview</h1>
-        <p className="mt-1 text-sm text-ink/65">
-          Last sync: {sync?.finishedAt || sync?.startedAt || "never"} · {sync?.message || "Run sync from Settings or Digest"}
-        </p>
+      <section className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl">Overview</h1>
+          <p className="mt-1 text-sm text-ink/65">
+            Last sync: {sync?.finishedAt || sync?.startedAt || "never"} · {sync?.message || "Run sync from Settings or Digest"}
+          </p>
+        </div>
+        <Link href="/guide" className="text-sm text-ink/55 hover:text-accent">
+          Guide →
+        </Link>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -76,14 +91,18 @@ export default function OverviewPage() {
               <span className="font-mono text-xs text-ink/50">28d</span>
             </div>
             <p className="mt-3 font-display text-3xl">{fmt(card.d28.clicks)}</p>
-            <p className="text-sm text-ink/60">{fmt(card.d28.impressions)} impressions</p>
+            <p className="text-sm text-ink/60">
+              {fmt(card.d28.impressions)} impressions · CTR {pct(card.d28.ctr)}
+            </p>
             <div className="mt-3">
               <Sparkline
                 values={card.d28.series}
                 color={card.engine === "gsc" ? "var(--gsc)" : card.engine === "bing" ? "var(--bing)" : "var(--yandex)"}
               />
             </div>
-            <p className="mt-2 text-xs text-ink/55">7d clicks {fmt(card.d7.clicks)}</p>
+            <p className="mt-2 text-xs text-ink/55">
+              7d clicks {fmt(card.d7.clicks)} · CTR {pct(card.d7.ctr)}
+            </p>
           </div>
         ))}
       </section>
@@ -124,6 +143,7 @@ export default function OverviewPage() {
               <th className="pb-2 font-medium">Clicks</th>
               <th className="pb-2 font-medium">Δ</th>
               <th className="pb-2 font-medium">Impr.</th>
+              <th className="pb-2 font-medium">CTR</th>
             </tr>
           </thead>
           <tbody>
@@ -140,6 +160,9 @@ export default function OverviewPage() {
                   <Delta value={s.clickDelta} />
                 </td>
                 <td className="font-mono">{fmt(s.weekImpressions)}</td>
+                <td className="font-mono">
+                  {pct(s.weekImpressions > 0 ? s.weekClicks / s.weekImpressions : 0)}
+                </td>
               </tr>
             ))}
           </tbody>
