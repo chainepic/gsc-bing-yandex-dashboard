@@ -6,6 +6,7 @@ dist
 .env.local
 data/*
 !data/.gitkeep
+data-screenshots/
 *.db
 *.db-journal
 .DS_Store

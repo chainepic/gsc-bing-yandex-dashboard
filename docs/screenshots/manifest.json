@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-10-10T07:05:26.498Z",
+  "base": "http://127.0.0.1:3847",
+  "files": [
+    "docs/screenshots/first-run.png",
+    "docs/screenshots/setup-empty.png",
+    "docs/screenshots/overview.png",
+    "docs/screenshots/sites.png",
+    "docs/screenshots/site-detail.png",
+    "docs/screenshots/site-detail-bing.png",
+    "docs/screenshots/site-detail-yandex.png",
+    "docs/screenshots/site-detail-filtered.png",
+    "docs/screenshots/keywords.png",
+    "docs/screenshots/keywords-filtered.png",
+    "docs/screenshots/digest.png",
+    "docs/screenshots/settings.png",
+    "docs/screenshots/settings-smtp.png",
+    "docs/screenshots/guide.png",
+    "docs/screenshots/setup.png",
+    "docs/screenshots/setup-step2.png",
+    "docs/screenshots/site-detail-docs.png"
+  ]
+}

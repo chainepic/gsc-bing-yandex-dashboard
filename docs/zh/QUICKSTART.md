@@ -8,8 +8,14 @@ README 内嵌真实截图（example.com 演示数据）：
 
 - [Overview](../../docs/screenshots/overview.png)
 - [Sites](../../docs/screenshots/sites.png)
+- [Site detail](../../docs/screenshots/site-detail.png)
 - [Keywords](../../docs/screenshots/keywords.png)
+- [Keywords filtered](../../docs/screenshots/keywords-filtered.png)
 - [Digest](../../docs/screenshots/digest.png)
+- [Settings](../../docs/screenshots/settings.png)
+- [Guide](../../docs/screenshots/guide.png)
+- [Setup](../../docs/screenshots/setup.png)
+- [First-run](../../docs/screenshots/first-run.png)
 
 ## 本地启动
 

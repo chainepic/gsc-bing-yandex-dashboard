@@ -44,6 +44,7 @@ export function getOnboardingProgress(): OnboardingProgress {
     hasMetrics,
     hasNotify,
     hasDigest,
-    needsFirstRunHelp: !anyEngine || siteCount === 0 || (!hasSynced && !hasMetrics),
+    // If metrics already exist (real sync or demo seed), show the dashboard.
+    needsFirstRunHelp: !hasMetrics && (!anyEngine || siteCount === 0 || !hasSynced),
   };
 }

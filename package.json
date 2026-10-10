@@ -1,7 +1,7 @@
 {
   "name": "search-triad",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Self-hosted dashboard unifying Google Search Console, Bing Webmaster, and Yandex Webmaster",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
@@ -11,6 +11,10 @@
     "db:generate": "pnpm --filter @search-triad/web db:generate",
     "db:migrate": "pnpm --filter @search-triad/web db:migrate",
     "lint": "pnpm -r lint",
-    "test:smoke": "node scripts/smoke-auth.mjs"
+    "test:smoke": "node scripts/smoke-auth.mjs",
+    "screenshots": "node scripts/capture-screenshots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.51.1"
   }
 }

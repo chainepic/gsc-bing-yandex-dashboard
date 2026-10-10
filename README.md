@@ -28,7 +28,7 @@ Credentials stay on your server in `./data` (encrypted with `APP_SECRET`).
 
 ## Screenshots
 
-Demo UI with fictional **example.com** data (`ALLOW_DEMO_SEED=1`).
+Demo UI with fictional **example.com** data (`ALLOW_DEMO_SEED=1`). Regenerate with `pnpm screenshots` while the app is running.
 
 <p align="center">
   <img src="docs/screenshots/overview.png" alt="Overview — Google, Bing, and Yandex cards with 28-day clicks and watchlist" width="920" />
@@ -43,14 +43,48 @@ Demo UI with fictional **example.com** data (`ALLOW_DEMO_SEED=1`).
       <p align="center"><em>Sites — week clicks &amp; Δ by engine</em></p>
     </td>
     <td width="50%">
-      <img src="docs/screenshots/keywords.png" alt="Keywords movers across Google Bing Yandex" />
-      <p align="center"><em>Keywords — unified movers table</em></p>
+      <img src="docs/screenshots/site-detail.png" alt="Site detail with Google Bing Yandex engine tabs and query/page movers" />
+      <p align="center"><em>Site detail — engine tabs, trends, query &amp; page movers</em></p>
     </td>
   </tr>
   <tr>
-    <td colspan="2">
+    <td width="50%">
+      <img src="docs/screenshots/keywords.png" alt="Keywords movers across Google Bing Yandex" />
+      <p align="center"><em>Keywords — unified movers table</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/keywords-filtered.png" alt="Keywords table filtered to pricing queries" />
+      <p align="center"><em>Keywords — client-side filter</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
       <img src="docs/screenshots/digest.png" alt="Daily digest history and generate buttons" />
       <p align="center"><em>Daily digest — history, preview, generate &amp; push</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/settings.png" alt="Settings with schedule, webhook, SMTP, and sync" />
+      <p align="center"><em>Settings — schedule, webhook, SMTP, sync</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/guide.png" alt="Usage guide with onboarding progress checklist" />
+      <p align="center"><em>Guide — onboarding checklist</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/setup.png" alt="Setup wizard connect engines step" />
+      <p align="center"><em>Setup wizard — connect engines</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/first-run.png" alt="First-run guidance on Overview before engines are connected" />
+      <p align="center"><em>First-run guidance</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/settings-smtp.png" alt="Settings scrolled to SMTP email digest fields" />
+      <p align="center"><em>SMTP digest delivery</em></p>
     </td>
   </tr>
 </table>

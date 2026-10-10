@@ -13,6 +13,7 @@ Thanks for helping with [gsc-bing-yandex-dashboard](https://github.com/chainepic
 - `pnpm lint` — typecheck all packages
 - `pnpm build` — connectors → core → web
 - `pnpm test:smoke` — panel auth unit smoke (+ optional `BASE_URL` live check)
+- `pnpm screenshots` — Playwright captures into `docs/screenshots/` (app must be running with `ALLOW_DEMO_SEED=1`)
 
 ## Pull requests
 
