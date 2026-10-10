@@ -1,0 +1,68 @@
+{
+  "generatedOn": "2026-04-01",
+  "timeZone": "Asia/Shanghai",
+  "engines": [
+    {
+      "engine": "gsc",
+      "asOf": "2026-03-30",
+      "weekClicks": 1280,
+      "weekImpressions": 42000,
+      "weekClickDelta": -45,
+      "weekImpressionDelta": 1200,
+      "siteCount": 2
+    },
+    {
+      "engine": "bing",
+      "asOf": "2026-03-31",
+      "weekClicks": 310,
+      "weekImpressions": 9800,
+      "weekClickDelta": 22,
+      "weekImpressionDelta": -400,
+      "siteCount": 2
+    },
+    {
+      "engine": "yandex",
+      "asOf": "2026-03-28",
+      "weekClicks": 95,
+      "weekImpressions": 4100,
+      "weekClickDelta": -8,
+      "weekImpressionDelta": -120,
+      "siteCount": 1
+    }
+  ],
+  "highlights": [
+    "GSC example.com: clicks -52, impressions +800",
+    "example.com down on both Google and Bing week-over-week"
+  ],
+  "sites": [
+    {
+      "host": "example.com",
+      "gsc": { "clicks": 900, "delta": -52 },
+      "bing": { "clicks": 210, "delta": -12 },
+      "yandex": { "clicks": 95, "delta": -8 }
+    },
+    {
+      "host": "docs.example.com",
+      "gsc": { "clicks": 380, "delta": 7 },
+      "bing": { "clicks": 100, "delta": 34 }
+    }
+  ],
+  "topKeywordMoves": [
+    {
+      "engine": "gsc",
+      "host": "example.com",
+      "direction": "down",
+      "key": "example product review",
+      "clicks": 40,
+      "clickDelta": -28
+    },
+    {
+      "engine": "bing",
+      "host": "docs.example.com",
+      "direction": "up",
+      "key": "example api tutorial",
+      "clicks": 55,
+      "clickDelta": 21
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+.turbo
+.env
+.env.local
+data/*
+!data/.gitkeep
+*.db
+*.db-journal
+.DS_Store
+coverage
+*.log
+*.tsbuildinfo

@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #14201c;
+  --paper: #f3f6f2;
+  --mist: #e4ebe3;
+  --line: #c5d0c4;
+  --accent: #0f6b5c;
+  --warn: #b45309;
+  --ok: #1f7a3a;
+  --gsc: #1a73e8;
+  --bing: #008373;
+  --yandex: #fc3f1d;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --bg-glow: radial-gradient(1200px 500px at 10% -10%, #d7e8df 0%, transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, #e8ebe0 0%, transparent 50%),
+    linear-gradient(180deg, #f7faf6 0%, #eef3ec 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e7eee8;
+    --paper: #101613;
+    --mist: #1a221e;
+    --line: #2d3a34;
+    --accent: #3db89f;
+    --warn: #f0a35e;
+    --ok: #6dca88;
+    --bg-glow: radial-gradient(1000px 480px at 8% -8%, #1a2b24 0%, transparent 55%),
+      radial-gradient(800px 400px at 92% 0%, #243028 0%, transparent 50%),
+      linear-gradient(180deg, #0d1210 0%, #121916 100%);
+  }
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink);
+  background: var(--bg-glow);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+
+.panel {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.delta-up {
+  color: var(--ok);
+}
+
+.delta-down {
+  color: var(--warn);
+}
+
+.engine-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  display: inline-block;
+}

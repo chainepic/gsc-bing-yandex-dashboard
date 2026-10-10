@@ -1,0 +1,15 @@
+{
+  "name": "search-triad",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-hosted dashboard unifying Google Search Console, Bing Webmaster, and Yandex Webmaster",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @search-triad/connectors build && pnpm --filter @search-triad/core build && pnpm --filter @search-triad/web dev",
+    "build": "pnpm --filter @search-triad/connectors build && pnpm --filter @search-triad/core build && pnpm --filter @search-triad/web build",
+    "start": "pnpm --filter @search-triad/web start",
+    "db:generate": "pnpm --filter @search-triad/web db:generate",
+    "db:migrate": "pnpm --filter @search-triad/web db:migrate",
+    "lint": "pnpm -r lint"
+  }
+}

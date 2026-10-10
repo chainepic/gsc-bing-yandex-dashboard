@@ -1,0 +1,13 @@
+services:
+  search-triad:
+    build: .
+    ports:
+      - "3847:3847"
+    environment:
+      APP_SECRET: ${APP_SECRET:-change-me-to-a-long-random-string-at-least-32-chars}
+      DATA_DIR: /data
+      TZ: ${TZ:-Asia/Shanghai}
+      PORT: 3847
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
