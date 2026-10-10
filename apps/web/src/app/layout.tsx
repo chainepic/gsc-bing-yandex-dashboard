@@ -22,8 +22,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Search Triad",
-  description: "Self-hosted Google, Bing, and Yandex search performance dashboard",
+  title: "GSC · Bing · Yandex Dashboard",
+  description: "Self-hosted dashboard for Google Search Console, Bing Webmaster Tools, and Yandex Webmaster",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

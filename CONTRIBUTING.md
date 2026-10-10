@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping with [Search Triad](https://github.com/chainepic/search-triad).
+Thanks for helping with [gsc-bing-yandex-dashboard](https://github.com/chainepic/gsc-bing-yandex-dashboard).
 
 1. Fork / clone this repository (keep it separate from any private SEO workspace).
 2. `pnpm install` and copy `.env.example` → `apps/web/.env`.

@@ -241,8 +241,8 @@ export function SetupWizard({ initialSettings, status }: Props) {
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-8">
       <header>
-        <p className="font-display text-4xl tracking-tight">Search Triad</p>
-        <p className="mt-2 text-ink/65">Connect Google Search Console, Bing Webmaster, and Yandex Webmaster.</p>
+        <p className="font-display text-4xl tracking-tight">GSC · Bing · Yandex</p>
+        <p className="mt-2 text-ink/65">Connect Google Search Console, Bing Webmaster Tools, and Yandex Webmaster.</p>
       </header>
 
       <ol className="flex flex-wrap gap-2 text-sm">

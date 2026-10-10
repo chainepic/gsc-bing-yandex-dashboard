@@ -18,8 +18,10 @@ export function Nav() {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
       <div>
-        <p className="font-display text-3xl tracking-tight text-ink">Search Triad</p>
-        <p className="mt-1 text-sm text-ink/65">Google · Bing · Yandex — self-hosted</p>
+        <p className="font-display text-2xl tracking-tight text-ink md:text-3xl">
+          GSC · Bing · Yandex
+        </p>
+        <p className="mt-1 text-sm text-ink/65">Search Console + Webmaster — self-hosted dashboard</p>
       </div>
       <nav className="flex flex-wrap gap-1">
         {links.map((link) => {
