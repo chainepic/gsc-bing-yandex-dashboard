@@ -31,6 +31,9 @@ type Props = {
     llmPolishEnabled: boolean;
     llmBaseUrl: string;
     llmModel: string;
+    reportAiEnabled: boolean;
+    reportAiBaseUrl: string;
+    reportAiModel: string;
   };
   status: {
     google: boolean;
@@ -38,6 +41,7 @@ type Props = {
     yandex: boolean;
     webhook: boolean;
     smtp: boolean;
+    reportAiKey?: boolean;
   };
   sites: Array<{
     id: number;
@@ -86,6 +90,7 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
   const [settings, setSettings] = useState(initialSettings);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [smtp, setSmtp] = useState<SmtpForm>(emptySmtp);
+  const [reportAiKey, setReportAiKey] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [liveDetail, setLiveDetail] = useState(lastSync?.detail ?? null);
@@ -398,38 +403,87 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
       </section>
 
       <section className="panel space-y-3 p-4">
-        <h2 className="font-display text-xl">{t("settings_llm")}</h2>
-        <p className="text-sm text-ink/60">{t("settings_llm_body")}</p>
+        <h2 className="font-display text-xl">{t("settings_report_ai")}</h2>
+        <p className="text-sm text-ink/60">{t("settings_report_ai_body")}</p>
         <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             className="mt-1"
-            checked={settings.llmPolishEnabled}
-            onChange={(e) => setSettings({ ...settings, llmPolishEnabled: e.target.checked })}
+            checked={settings.reportAiEnabled}
+            onChange={(e) => setSettings({ ...settings, reportAiEnabled: e.target.checked })}
           />
-          <span>{t("settings_llm_enable")}</span>
+          <span>{t("settings_report_ai_enable")}</span>
         </label>
         <label className="block text-sm">
-          {t("settings_llm_base")}
+          {t("settings_report_ai_base")}
           <input
-            className="mt-1 w-full border border-line bg-paper px-3 py-2"
-            value={settings.llmBaseUrl}
-            onChange={(e) => setSettings({ ...settings, llmBaseUrl: e.target.value })}
-            placeholder="http://127.0.0.1:11434"
+            className="mt-1 w-full border border-line bg-paper px-3 py-2 font-mono text-sm"
+            value={settings.reportAiBaseUrl}
+            onChange={(e) => setSettings({ ...settings, reportAiBaseUrl: e.target.value })}
+            placeholder="https://api.openai.com/v1"
           />
         </label>
         <label className="block text-sm">
-          {t("settings_llm_model")}
+          {t("settings_report_ai_model")}
           <input
             className="mt-1 w-full max-w-sm border border-line bg-paper px-3 py-2"
-            value={settings.llmModel}
-            onChange={(e) => setSettings({ ...settings, llmModel: e.target.value })}
-            placeholder="llama3.2"
+            value={settings.reportAiModel}
+            onChange={(e) => setSettings({ ...settings, reportAiModel: e.target.value })}
+            placeholder="gpt-4o-mini"
           />
         </label>
-        <button disabled={busy} onClick={saveSettings} className="border border-line bg-mist px-3 py-1.5 text-sm">
-          {t("settings_save_llm")}
-        </button>
+        <label className="block text-sm">
+          {t("settings_report_ai_key")}
+          <input
+            type="password"
+            className="mt-1 w-full border border-line bg-paper px-3 py-2 font-mono text-sm"
+            value={reportAiKey}
+            onChange={(e) => setReportAiKey(e.target.value)}
+            placeholder={status.reportAiKey ? t("settings_report_ai_key_set") : "sk-…"}
+            autoComplete="off"
+          />
+          <span className="mt-1 block text-xs text-ink/45">{t("settings_report_ai_key_hint")}</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setMsg("");
+              try {
+                await fetch("/api/settings", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    reportAiEnabled: settings.reportAiEnabled,
+                    reportAiBaseUrl: settings.reportAiBaseUrl,
+                    reportAiModel: settings.reportAiModel,
+                  }),
+                });
+                if (reportAiKey.trim()) {
+                  await fetch("/api/secrets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ reportAi: { apiKey: reportAiKey.trim() } }),
+                  });
+                  setReportAiKey("");
+                }
+                setMsg(t("settings_report_ai_saved"));
+                router.refresh();
+              } catch (err) {
+                setMsg(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="border border-line bg-mist px-3 py-1.5 text-sm"
+          >
+            {t("settings_save_report_ai")}
+          </button>
+          <Link href="/export" className="border border-line bg-paper px-3 py-1.5 text-sm text-ink/70">
+            {t("nav_export")} →
+          </Link>
+        </div>
       </section>
 
       <section className="panel space-y-3 p-4">

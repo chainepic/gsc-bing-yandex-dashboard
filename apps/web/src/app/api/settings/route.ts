@@ -30,10 +30,13 @@ export async function POST(req: Request) {
       uiLocale: body.uiLocale === "zh" || body.uiLocale === "en" ? body.uiLocale : undefined,
       digestLocale: body.digestLocale === "zh" || body.digestLocale === "en" ? body.digestLocale : undefined,
       digestSections: body.digestSections,
-      llmPolishEnabled:
-        body.llmPolishEnabled === undefined ? undefined : Boolean(body.llmPolishEnabled),
+      llmPolishEnabled: false,
       llmBaseUrl: typeof body.llmBaseUrl === "string" ? body.llmBaseUrl : undefined,
       llmModel: typeof body.llmModel === "string" ? body.llmModel : undefined,
+      reportAiEnabled:
+        body.reportAiEnabled === undefined ? undefined : Boolean(body.reportAiEnabled),
+      reportAiBaseUrl: typeof body.reportAiBaseUrl === "string" ? body.reportAiBaseUrl : undefined,
+      reportAiModel: typeof body.reportAiModel === "string" ? body.reportAiModel : undefined,
     });
     scheduleFromSettings();
     return NextResponse.json(next);

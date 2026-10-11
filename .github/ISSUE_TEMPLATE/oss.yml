@@ -1,0 +1,40 @@
+name: OSS (self-host MIT)
+description: Bug or improvement for the open-source self-hosted panel
+title: "[oss] "
+labels: ["track:oss"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For **commercial** Setup / Cloud / billing ideas, use the Cloud template instead.
+        Dual-track rules: `docs/DUAL-TRACK.md`
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Setup / OAuth
+        - Sync
+        - UI / i18n
+        - Digest / notify
+        - Docker / ops
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should change for self-host users?
+    validations:
+      required: true
+  - type: checkboxes
+    id: gate
+    attributes:
+      label: Gate check
+      options:
+        - label: This does not require a Chainepic account to use locally
+          required: true
+        - label: This does not put webmaster sync behind a paywall
+          required: true

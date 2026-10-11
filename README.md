@@ -18,7 +18,8 @@
   <a href="#features">Features</a> ·
   <a href="#connect-search-engines">Connect engines</a> ·
   <a href="docs/zh/QUICKSTART.md">中文快速开始</a> ·
-  <a href="docs/OPEN-CORE.md">Open core / SaaS</a>
+  <a href="docs/OPEN-CORE.md">Open core / SaaS</a> ·
+  <a href="docs/DUAL-TRACK.md">Dual-track ops</a>
 </p>
 
 <p align="center">
@@ -27,7 +28,7 @@
 
 ---
 
-One SQLite database, three official webmaster APIs, zero third-party SEO SaaS for GSC. Connect **Google Search Console**, **Bing Webmaster**, and **Yandex Webmaster** (any subset), sync ~28 days of metrics, and get dashboards plus a **daily Markdown/JSON digest** via webhook or SMTP.
+One SQLite database, three official webmaster APIs, zero third-party SEO SaaS for GSC. Connect **Google Search Console**, **Bing Webmaster**, and **Yandex Webmaster** (any subset), sync **28 / 56 / 90** days of metrics, and get dashboards plus a **daily Markdown/JSON digest** via webhook or SMTP.
 
 Credentials stay on your server in `./data` (encrypted with `APP_SECRET`).
 
@@ -178,7 +179,7 @@ More captures (FAQ, Inspect, Prompt, SMTP, engine tabs, filters): see [`docs/scr
 | **Schedule** | In-process cron (default **09:00** in your chosen timezone) |
 | **Secrets** | OAuth tokens and API keys encrypted with `APP_SECRET` (AES-256-GCM) |
 
-**Out of scope for v1:** GA4, Yandex Metrica, sitemap submission, multi-tenant hosting.
+**Out of scope for v1:** GA4, Yandex Metrica, sitemap submission, multi-tenant hosting, multi-login seats, OpenSEO / keyword-SaaS plugins. Share via **Export**; optional **Report AI (BYOK)** interprets the same slice.
 
 ## Architecture
 
@@ -232,6 +233,10 @@ APP_SECRET=$(openssl rand -hex 32) PANEL_PASSWORD='your-panel-password' docker c
 ```
 
 Data persists in **`./data`**. Health probe: **`GET /api/health`** (no auth).
+
+Backup / migrate the data directory: [docs/ops/DATA-BACKUP.md](docs/ops/DATA-BACKUP.md) · `scripts/backup-data.sh`.
+
+Sync pagination / rate limits and **28 / 56 / 90** history windows: [docs/ops/SYNC-AND-HISTORY.md](docs/ops/SYNC-AND-HISTORY.md) (also Guide steps 4 & 11, FAQ).
 
 ### Demo data
 
@@ -312,7 +317,10 @@ Full policy: [SECURITY.md](SECURITY.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 Brand & trademark: [docs/BRANDING.md](docs/BRANDING.md).
-Hosted SaaS / AI metering (does not replace MIT self-host): [docs/OPEN-CORE.md](docs/OPEN-CORE.md).
+Hosted SaaS / AI metering (does not replace MIT self-host): [docs/OPEN-CORE.md](docs/OPEN-CORE.md).  
+Open-core package layout / ports: [docs/ARCHITECTURE-OPEN-CORE.md](docs/ARCHITECTURE-OPEN-CORE.md).  
+Develop OSS and Cloud in parallel without interference: [docs/DUAL-TRACK.md](docs/DUAL-TRACK.md).  
+Commercial planning (ignore if you only self-host): [docs/cloud/](docs/cloud/).
 
 ## License & trademark
 

@@ -3,6 +3,9 @@
 > **定位：** 自托管「三引擎监测」面板（Google Search Console + Bing Webmaster + Yandex Webmaster）+ **针对性优化建议**。  
 > 数据来自官方 Webmaster API，落本地 SQLite；digest / 站内推荐帮你决定改什么页、查什么词。  
 > **不是** OpenSEO / Ahrefs / 关键词研究 SaaS 的替代品；OpenSEO 不作为产品主干。
+>
+> **双线并行（OSS ∥ Cloud，互不阻塞）：** [docs/DUAL-TRACK.md](docs/DUAL-TRACK.md)  
+> 周任务请写在 [docs/backlog/oss.md](docs/backlog/oss.md) / [docs/backlog/cloud.md](docs/backlog/cloud.md)，本文件偏产品能力清单。
 
 版本基线：**v0.2.x**（已可用的监测面板）。下文只列向前做的事。
 
@@ -51,7 +54,7 @@
 ### 建议与可操作输出
 
 - [x] **建议优先级打分**：严重度 × 流量规模 × 是否跨引擎；支持 snooze / 已处理
-- [x] **可选本地 LLM 润色**：对规则结果生成自然语言摘要（Ollama / 本地 API；默认关闭；无云端必选）
+- [x] ~~可选本地 LLM 润色建议卡片~~ → **已弃用**；改用 Export → Report AI（BYOK）
 - [x] **导出**：建议列表 CSV / 追加进 webhook payload
 
 ### 轻量内容 / 技术提示（自家 URL，支撑「针对性优化」）
@@ -77,9 +80,11 @@
 - [x] i18n（中/英 UI 字符串） — MVP: nav + key titles via Settings `uiLocale` (en/zh); deeper string coverage later
 - [x] 更细的 Guide：URL 检查、建议规则说明、本地爬取安全边界
 
-### 以后再说（可选薄插件，非主干）
+### 已落地（分享 / AI）
 
-- [ ] 可选 **OpenSEO 薄插件**：仅作外部数据旁路（若用户已有账号），不替代三引擎 sync，不做机会词 API 驱动的产品主路径
+- [x] **选择性导出**（JSON / CSV / Markdown）+ 出站 inventory
+- [x] **Report AI（BYOK）**：用户自备 API Key + 预设提示词解读导出切片（非建议卡片润色）
+- [x] 单人面板；不与他人共享登录 — 分享靠导出
 
 ---
 
@@ -87,12 +92,13 @@
 
 | 不做 | 原因 |
 | --- | --- |
-| 以 OpenSEO 为 GSC/监测替代主干 | 与「官方三引擎 + 自托管」定位冲突 |
-| 多租户 / SaaS 托管版 | 保持单用户自托管 |
+| OpenSEO / 关键词 SaaS 集成 | 定位冲突；完全不考虑 |
+| 多租户 / SaaS 托管版（进 MIT） | 保持单用户自托管；托管属 Cloud |
+| 多人登录同一面板 | 分享用导出即可 |
 | GA4 / Yandex Metrica 作为 v1 核心 | 分析产品线另论；本产品专注 Search Webmaster |
 | / 竞品外链 / 全网爬虫 SaaS | 不做第二个 Ahrefs/SEMrush |
 | Sitemap **提交**、批量索引「刷量」自动化 | 只读优先；Bing URL 提交仅可选+确认 |
-| 云端强制 LLM / 把密钥送到第三方 SEO API | 建议默认本地规则；LLM 可选本地 |
+| 云端强制 LLM / 把密钥送到第三方 SEO API | 默认规则；可选 BYOK 报告解读；计量属 Cloud |
 
 ---
 
@@ -105,13 +111,13 @@
    规则引擎 v1 → 站内 Recommendations → digest「本周建议」→ snooze / 导出
 
 3. **Phase C — 可执行提示**  
-   轻量自家 URL 审计 → 与掉量页对照 →（可选）本地 LLM 润色
+   轻量自家 URL 审计 → 与掉量页对照 →（可选）Export / Report AI
 
 4. **Phase D — 引擎特化与写入边界**  
    Yandex SQI/索引字段 → Bing URL 提交（确认流）→ API 能力矩阵文档
 
 5. **Phase E — 打磨**  
-   更长历史、digest 模板、i18n、Guide 补全；OpenSEO 薄插件仅此时考虑
+   更长历史、digest 模板、i18n、Guide 补全；选择性导出与 BYOK 报告解读
 
 ---
 

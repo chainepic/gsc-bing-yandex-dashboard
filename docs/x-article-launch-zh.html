@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最近一个站长面板开源杀疯了，出海站长都在抢着求更新</title>
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #3d4f47;
+      --line: #d5ddd6;
+      --paper: #f7faf6;
+      --accent: #0f6b5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 18px/1.75 "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+    .hint {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px 14px;
+      margin-bottom: 28px;
+      border-radius: 8px;
+    }
+    .hint code { font-size: 12px; }
+    article h1 {
+      font-family: "Songti SC", "Noto Serif SC", Georgia, serif;
+      font-size: 2rem;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+    }
+    .dek {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    article h2 {
+      font-family: "Songti SC", "Noto Serif SC", Georgia, serif;
+      font-size: 1.4rem;
+      margin: 2.2rem 0 0.75rem;
+      letter-spacing: -0.01em;
+    }
+    article p { margin: 0 0 1.1rem; }
+    article ul { margin: 0 0 1.2rem; padding-left: 1.25rem; }
+    article li { margin: 0.35rem 0; }
+    article a { color: var(--accent); }
+    figure {
+      margin: 1.4rem 0 1.6rem;
+      padding: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    figcaption {
+      margin-top: 0.55rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .cta {
+      border-left: 3px solid var(--accent);
+      padding: 0.2rem 0 0.2rem 1rem;
+      margin: 1.6rem 0;
+    }
+    strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hint">
+      <strong>用法：</strong>用浏览器打开本文件。从标题选到最后一段（跳过这灰色提示框），复制后粘贴到知乎文章 / 公众号 / 小红书长文等中文平台。
+      若图片粘贴丢失，从仓库 <code>docs/screenshots/</code> 重新上传（或从本页拖图）。
+      中文界面截图优先：<code>overview-zh.png</code>、<code>sites-zh.png</code>、<code>keywords-zh.png</code>、<code>site-detail-zh.png</code>、<code>digest-zh.png</code>、<code>setup-zh.png</code>。
+    </div>
+
+    <!-- ===== 从这里开始复制 ===== -->
+    <article>
+      <h1>最近一个站长面板开源杀疯了，出海站长都在抢着求更新</h1>
+      <p class="dek">
+        Google + Bing + Yandex 三条官方 API 装进一个自托管面板。密钥不出本机，群里已经在互相安利、催下个版本。
+      </p>
+
+      <p>
+        做出海站的都懂：早上一睁眼，先开 <strong>Google Search Console</strong>，再开 <strong>Bing Webmaster</strong>，
+        俄语区还得再开一遍 <strong>Yandex</strong>。三个后台、三套数字、同一份焦虑。
+      </p>
+
+      <p>
+        最近圈子里疯传一个开源项目：把三家站长数据拉到同一块面板里，同步大约 28 天指标，标出变动，
+        还能每天把 Markdown / JSON 日报推到 webhook 或邮箱。MIT，自托管，维护方是 <strong>Chainepic LTD</strong>。
+      </p>
+
+      <p class="cta">
+        <strong>GitHub：</strong>
+        <a href="https://github.com/chainepic/gsc-bing-yandex-dashboard">github.com/chainepic/gsc-bing-yandex-dashboard</a>
+      </p>
+
+      <h2>为什么站长宁可自托管，也不愿再交钥匙？</h2>
+
+      <p>
+        市面上那些「统一 SEO 看板」，套路差不多：把你的 Search Console OAuth、Bing API key 交到<em>他们</em>云上。
+        大厂营销团队或许无所谓；管几十个站、或者根本不想再多一个握流量数据的供应商——直接拒。
+      </p>
+
+      <p>
+        这个项目踩的是另一条路，也是它传得快的原因：
+      </p>
+
+      <ul>
+        <li>只对接 <strong>官方</strong> GSC / Bing / Yandex API</li>
+        <li>指标存在本地 <strong>SQLite</strong> 文件里</li>
+        <li>用你自己的 <code>APP_SECRET</code> 加密密钥（AES-256-GCM）</li>
+        <li>公网可设面板密码；localhost 默认开放</li>
+      </ul>
+
+      <p>
+        升级就是 <code>git pull</code>。数据在 <code>./data</code>。不上云、不经过中间人——所以大家才敢真装。
+      </p>
+
+      <h2>先看长什么样（中文界面）</h2>
+
+      <p>
+        总览页：各引擎 KPI、火花线、周 / 28 天对比、覆盖缺口和关注列表——不用在三个后台之间跳。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/overview-zh.png"
+          alt="总览：Google、Bing、Yandex 卡片"
+          width="1440"
+          height="900"
+        />
+        <figcaption>总览 — Google · Bing · Yandex 一眼看完（演示数据：example.com）</figcaption>
+      </figure>
+
+      <p>
+        站点页并排展示周点击和周环比，以及某引擎缺失或骤降的位置。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/sites-zh.png"
+          alt="站点表：跨引擎覆盖缺口"
+          width="1440"
+          height="900"
+        />
+        <figcaption>站点 — 覆盖缺口与各引擎周环比</figcaption>
+      </figure>
+
+      <p>
+        关键词跨引擎统一：查询词、主机、点击、展示、排名和变化，带客户端筛选（骤降、「展示↑ / 点击↓」等）。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/keywords-zh.png"
+          alt="关键词变动表：跨引擎"
+          width="1440"
+          height="900"
+        />
+        <figcaption>关键词 — GSC、Bing、Yandex 变动一览</figcaption>
+      </figure>
+
+      <p>
+        点进某个主机，切换引擎标签看趋势、查询词变动和页面变动。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/site-detail-zh.png"
+          alt="站点详情：引擎标签与变动"
+          width="1440"
+          height="900"
+        />
+        <figcaption>站点详情 — 引擎标签、趋势、查询词与页面变动</figcaption>
+      </figure>
+
+      <h2>真正让人上头的，是早报</h2>
+
+      <p>
+        很多站长不是缺看板，是缺一份「睁眼就能看」的东西。
+        这面板默认每天早上（你时区 09:00）先同步、再出日报，经 webhook 或 SMTP 推出去；也可以在「日报」页随时手搓一份。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/digest-zh.png"
+          alt="日报历史与生成操作"
+          width="1440"
+          height="900"
+        />
+        <figcaption>日报 — 历史、预览、生成并推送</figcaption>
+      </figure>
+
+      <h2>装起来有多快？</h2>
+
+      <p>
+        四步向导。Google / Bing / Yandex 任意接——一家也行，三家更香——勾选资源、点同步就完事。
+        界面自带 <strong>中英文</strong>，出海团队不用再自己翻译。
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/setup-zh.png"
+          alt="安装向导：连接引擎"
+          width="1440"
+          height="900"
+        />
+        <figcaption>安装向导 — 连接 Google、Bing 和/或 Yandex</figcaption>
+      </figure>
+
+      <p>本地开箱大概就这几步：</p>
+
+      <ul>
+        <li><code>pnpm install</code></li>
+        <li>在 <code>apps/web/.env</code> 里设一个强 <code>APP_SECRET</code></li>
+        <li><code>pnpm dev</code> → 打开 <code>http://localhost:3847/setup</code></li>
+        <li>嫌麻烦就 Docker Compose 一条龙</li>
+      </ul>
+
+      <h2>免费到什么程度？</h2>
+
+      <p>
+        自托管整包是 <strong>MIT</strong>：同步、变动、日报、规则建议，全在你机器上跑。
+        官方文档里写了以后可能有可选托管云和按量 AI——但开源版本身不依赖这些。
+        细节在仓库 <code>docs/OPEN-CORE.md</code>。
+      </p>
+
+      <h2>为什么出海站长扎堆？</h2>
+
+      <ul>
+        <li>天天泡 Search Console 的独立开发 / 运营</li>
+        <li>还要盯 Bing（甚至 Yandex）的代理商、多站组合</li>
+        <li>想要一份早报，而不是三个浏览器标签</li>
+        <li>死活不愿把站长凭证再贴进另一家 SaaS</li>
+      </ul>
+
+      <p>
+        说清楚：它<em>不是</em> Ahrefs、Semrush，也不是关键词研究套件。
+        就是一层薄控制台，盖在你本来就拥有的官方站长数据上——所以传得快、也装得放心。
+      </p>
+
+      <h2>链接丢这里，自己去 star</h2>
+
+      <p>
+        文中截图是虚构的 <strong>example.com</strong> 演示数据，没有客户站。
+        自托管之后，真实数字只在你磁盘上。
+      </p>
+
+      <p class="cta">
+        仓库、文档、中英文截图：<br />
+        <a href="https://github.com/chainepic/gsc-bing-yandex-dashboard">https://github.com/chainepic/gsc-bing-yandex-dashboard</a>
+      </p>
+
+      <p>
+        群里已经有人在催功能、蹲更新。你要是也在同时盯 GSC + Bing（或三家），
+        装完觉得省事——去 GitHub 留个 star，Issue / PR 他们也收。
+      </p>
+
+      <p>
+        项目维护：<strong>Chainepic LTD</strong>
+      </p>
+    </article>
+    <!-- ===== 复制到这里结束 ===== -->
+  </div>
+</body>
+</html>

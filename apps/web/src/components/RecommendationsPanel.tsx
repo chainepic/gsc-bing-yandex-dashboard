@@ -31,19 +31,16 @@ function severityClass(s: RecCard["severity"]) {
 export function RecommendationsPanel({
   recommendations,
   compact = false,
-  llmEnabled = false,
 }: {
   recommendations: RecCard[];
   compact?: boolean;
+  /** @deprecated ignored — use Export → Report AI */
   llmEnabled?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "engine" | "high">("all");
-  const [polishBusy, setPolishBusy] = useState(false);
-  const [polishMsg, setPolishMsg] = useState("");
-  const [polished, setPolished] = useState<Record<string, string>>({});
 
   const rows = useMemo(() => {
     return recommendations.filter((r) => {
@@ -66,31 +63,6 @@ export function RecommendationsPanel({
       router.refresh();
     } finally {
       setBusyId(null);
-    }
-  }
-
-  async function runPolish() {
-    setPolishBusy(true);
-    setPolishMsg("");
-    try {
-      const res = await fetch("/api/llm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: compact ? 4 : 8, ids: visible.map((r) => r.id) }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Polish failed");
-      const map: Record<string, string> = {};
-      for (const row of data.polished || []) {
-        if (row.polished) map[row.id] = row.polished;
-        else if (row.error) map[row.id] = `(LLM error: ${row.error})`;
-      }
-      setPolished((prev) => ({ ...prev, ...map }));
-      setPolishMsg(t("recs_polish_ok", { n: Object.keys(map).length }));
-    } catch (err) {
-      setPolishMsg(err instanceof Error ? err.message : String(err));
-    } finally {
-      setPolishBusy(false);
     }
   }
 
@@ -150,22 +122,15 @@ export function RecommendationsPanel({
               {t("recs_all_arrow")}
             </Link>
           )}
-          {llmEnabled && !compact && (
-            <button
-              type="button"
-              disabled={polishBusy}
-              onClick={() => void runPolish()}
-              className="border border-line bg-mist px-2.5 py-1 text-xs disabled:opacity-50"
-              title={t("recs_polish_hint")}
-            >
-              {polishBusy ? t("recs_polishing") : t("recs_polish")}
-            </button>
-          )}
         </div>
       </div>
-      {polishMsg && <p className="text-xs text-ink/55">{polishMsg}</p>}
-      {llmEnabled && !compact && (
-        <p className="text-xs text-ink/45">{t("recs_polish_note")}</p>
+      {!compact && (
+        <p className="text-xs text-ink/45">
+          {t("recs_export_hint")}{" "}
+          <Link href="/export" className="text-accent underline decoration-line underline-offset-2">
+            {t("nav_export")}
+          </Link>
+        </p>
       )}
 
       <ul className="space-y-3">
@@ -184,9 +149,6 @@ export function RecommendationsPanel({
                 </p>
                 <h3 className="font-medium text-ink">{r.title}</h3>
                 <p className="text-sm text-ink/70">{r.summary}</p>
-                {polished[r.id] && (
-                  <p className="text-sm text-ink/80 border-l-2 border-accent/40 pl-2">{polished[r.id]}</p>
-                )}
                 {r.subject && (
                   <p className="truncate font-mono text-xs text-ink/55" title={r.subject}>
                     {r.kind}: {r.subject}

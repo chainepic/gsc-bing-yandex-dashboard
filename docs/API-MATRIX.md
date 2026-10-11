@@ -5,7 +5,7 @@ Self-hosted panel uses **first-party Webmaster APIs only**. OpenSEO is not a bac
 | Capability | Google (GSC) | Bing Webmaster | Yandex Webmaster | Notes |
 | --- | --- | --- | --- | --- |
 | List properties / hosts | Read | Read | Read | Setup wizard |
-| Daily clicks / impressions (~28d) | Read | Read | Read | Sync → SQLite |
+| Daily clicks / impressions (28 / 56 / 90d) | Read | Read (series length from API; ignores panel window) | Read | Sync → SQLite; see [ops/SYNC-AND-HISTORY.md](./ops/SYNC-AND-HISTORY.md) |
 | Query movers (WoW) | Read | Read | Read (popular; limited Δ) | Yandex lacks full WoW query Δ |
 | Page movers (WoW) | Read | Read | — | No Yandex page movers in API path used |
 | Sitemaps list / status | Read | Read (`GetFeeds`) | Read | **No sitemap submit** in product |

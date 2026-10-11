@@ -102,6 +102,7 @@ export default async function GuidePage() {
         hrefLabel={t(locale, "guide_s4_href")}
       >
         <p>{t(locale, "guide_s4_p")}</p>
+        <p className="mt-2">{t(locale, "guide_s4_p2")}</p>
         <StatusLine ok={p.hasSynced} okLabel={t(locale, "guide_s4_ok")} pendingLabel={t(locale, "guide_s4_pending")} />
       </GuideStep>
 
@@ -190,6 +191,30 @@ export default async function GuidePage() {
         hrefLabel={t(locale, "guide_s10_href")}
       >
         <p>{t(locale, "guide_s10_p")}</p>
+      </GuideStep>
+
+      <GuideStep
+        locale={locale}
+        n={11}
+        title={t(locale, "guide_s11_title")}
+        done={p.hasSynced}
+        href="/settings"
+        hrefLabel={t(locale, "guide_s11_href")}
+      >
+        <p>{t(locale, "guide_s11_p")}</p>
+        <p className="mt-2">{t(locale, "guide_s11_p2")}</p>
+      </GuideStep>
+
+      <GuideStep
+        locale={locale}
+        n={12}
+        title={t(locale, "guide_s12_title")}
+        done={false}
+        href="/export"
+        hrefLabel={t(locale, "guide_s12_href")}
+      >
+        <p>{t(locale, "guide_s12_p")}</p>
+        <p className="mt-2">{t(locale, "guide_s12_p2")}</p>
       </GuideStep>
 
       <footer className="border-t border-line pt-6 text-sm text-ink/60">

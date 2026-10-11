@@ -24,10 +24,19 @@ export type AppSettings = {
   uiLocale: UiLocale | null;
   digestLocale: DigestLocale;
   digestSections: DigestSections;
-  /** Opt-in local Ollama polish — default OFF. */
+  /**
+   * @deprecated Recommendation-card polish — hidden in UI; use Report AI instead.
+   */
   llmPolishEnabled: boolean;
+  /** @deprecated Prefer reportAiBaseUrl */
   llmBaseUrl: string;
+  /** @deprecated Prefer reportAiModel */
   llmModel: string;
+  /** Opt-in BYOK report interpretation — default OFF. */
+  reportAiEnabled: boolean;
+  /** OpenAI-compatible Chat Completions base (…/v1). */
+  reportAiBaseUrl: string;
+  reportAiModel: string;
 };
 
 const DEFAULTS: AppSettings = {
@@ -46,6 +55,9 @@ const DEFAULTS: AppSettings = {
   llmPolishEnabled: false,
   llmBaseUrl: "http://127.0.0.1:11434",
   llmModel: "llama3.2",
+  reportAiEnabled: false,
+  reportAiBaseUrl: "https://api.openai.com/v1",
+  reportAiModel: "gpt-4o-mini",
 };
 
 function intSetting(map: Record<string, string>, key: string, fallback: number, min: number, max: number) {
@@ -95,6 +107,9 @@ export function getSettings(): AppSettings {
     llmPolishEnabled: map.llmPolishEnabled === "true",
     llmBaseUrl: map.llmBaseUrl || DEFAULTS.llmBaseUrl,
     llmModel: map.llmModel || DEFAULTS.llmModel,
+    reportAiEnabled: map.reportAiEnabled === "true",
+    reportAiBaseUrl: map.reportAiBaseUrl || map.llmBaseUrl || DEFAULTS.reportAiBaseUrl,
+    reportAiModel: map.reportAiModel || map.llmModel || DEFAULTS.reportAiModel,
   };
 }
 
@@ -127,9 +142,12 @@ export function setSettings(patch: Partial<AppSettings>) {
     historyDays: String(next.historyDays),
     digestLocale: next.digestLocale,
     digestSectionsJson: JSON.stringify(next.digestSections),
-    llmPolishEnabled: String(next.llmPolishEnabled),
+    llmPolishEnabled: "false",
     llmBaseUrl: next.llmBaseUrl,
     llmModel: next.llmModel,
+    reportAiEnabled: String(next.reportAiEnabled),
+    reportAiBaseUrl: next.reportAiBaseUrl,
+    reportAiModel: next.reportAiModel,
   };
   // Only persist uiLocale when explicitly set (do not write "en" for unset → browser default).
   if (next.uiLocale === "zh" || next.uiLocale === "en") {

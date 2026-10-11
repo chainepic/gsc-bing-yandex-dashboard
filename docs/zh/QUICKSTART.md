@@ -2,7 +2,7 @@
 
 由 **Chainepic LTD** 维护。产品名：**GSC · Bing · Yandex Dashboard**（仓库内码名 `search-triad`）。
 
-[English README](../../README.md) · [品牌说明](../BRANDING.md) · [开源与 SaaS 边界](../OPEN-CORE.md) · 仓库：[gsc-bing-yandex-dashboard](https://github.com/chainepic/gsc-bing-yandex-dashboard)
+[English README](../../README.md) · [品牌说明](../BRANDING.md) · [开源与 SaaS 边界](../OPEN-CORE.md) · [双线并行开发](../DUAL-TRACK.md) · 仓库：[gsc-bing-yandex-dashboard](https://github.com/chainepic/gsc-bing-yandex-dashboard)
 
 ## 产品界面
 
@@ -44,6 +44,10 @@ APP_SECRET=$(openssl rand -hex 32) PANEL_PASSWORD='你的面板密码' docker co
 ```
 
 健康检查（无需登录）：`GET /api/health`。公网部署请设置 `PANEL_PASSWORD` 或反向代理 Basic Auth。
+
+数据目录备份 / 迁移：见 [DATA-BACKUP.md](../ops/DATA-BACKUP.md)，或运行 `scripts/backup-data.sh`。恢复时必须使用**同一** `APP_SECRET`，否则无法解密已存的引擎凭证。
+
+同步翻页 / 限流与 **28 / 56 / 90** 天历史窗口：见 [SYNC-AND-HISTORY.md](../ops/SYNC-AND-HISTORY.md)（面板内指南第 4、11 步与 FAQ 同主题）。
 
 ## 三引擎凭证
 

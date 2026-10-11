@@ -16,6 +16,7 @@ const primaryLinks: NavLink[] = [
   { href: "/keywords", key: "nav_keywords" },
   { href: "/recommendations", key: "nav_recommendations" },
   { href: "/digest", key: "nav_digest" },
+  { href: "/export", key: "nav_export" },
   { href: "/settings", key: "nav_settings" },
 ];
 

@@ -1,0 +1,40 @@
+name: Cloud (commercial)
+description: Hosted product, Setup package, agency, AI metering — not MIT panel bugs
+title: "[cloud] "
+labels: ["track:cloud"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Planning lives under `docs/cloud/`. Do **not** propose removing MIT features to sell Cloud.
+        Dual-track rules: `docs/DUAL-TRACK.md`
+  - type: dropdown
+    id: offer
+    attributes:
+      label: Offer
+      options:
+        - Setup (one-time)
+        - Cloud Solo hosting
+        - Agency / multi-seat
+        - AI Assist metering
+        - Support / SLA
+        - Marketing / landing
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should Chainepic sell or operate?
+    validations:
+      required: true
+  - type: checkboxes
+    id: gate
+    attributes:
+      label: Gate check
+      options:
+        - label: Self-host users can keep full sync + rules without paying
+          required: true
+        - label: This work will not delete capabilities from the MIT tree
+          required: true

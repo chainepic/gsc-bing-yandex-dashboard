@@ -86,6 +86,28 @@ const en: FaqItem[] = [
     ],
   },
   {
+    id: "sync-rate-limit",
+    tags: ["sync", "quota", "rate-limit", "gsc", "bing", "yandex"],
+    q: "Sync stalls or fails with 429 / quota / rate limit",
+    see: "One or more hosts fail; message may mention HTTP 429, 503, or quota.",
+    fix: [
+      "The panel syncs hosts one-by-one and does not auto-backoff on 429 yet — wait, then Run sync again.",
+      "Prefer daily cron over hammering Sync when you have many properties.",
+      "API calls use fixed row caps (not a full multi-page query export). See Guide step 4 and docs/ops/SYNC-AND-HISTORY.md.",
+    ],
+  },
+  {
+    id: "history-windows",
+    tags: ["sync", "history", "settings", "gsc"],
+    q: "What do 28 / 56 / 90 history days mean?",
+    see: "Settings → Sync / UI history window; Overview shows 7d / 28d / Nd.",
+    fix: [
+      "Those values set how many days GSC/Yandex refill on sync and how far Overview looks back in SQLite.",
+      "Bing often already returns a longer rank series; movers stay week-over-week.",
+      "After raising the window, Run sync again. Local SQLite is your ledger for digests/rules — not a live GSC tab. Details: Guide step 11 · docs/ops/SYNC-AND-HISTORY.md.",
+    ],
+  },
+  {
     id: "last-sync-time",
     tags: ["ui", "timezone"],
     q: "Last sync time looks like 2026-10-11T01:00:42.202Z",
@@ -93,6 +115,27 @@ const en: FaqItem[] = [
     fix: [
       "Fixed: UI shows local timezone (e.g. 2026-10-11 09:00 for Asia/Shanghai).",
       "Refresh the page after updating the app.",
+    ],
+  },
+  {
+    id: "export-share",
+    tags: ["export", "share"],
+    q: "How do I share data with someone else?",
+    see: "Single-user panel — no multi-login seats.",
+    fix: [
+      "Open Export → pick hosts / date range / tables → Download (JSON, CSV, or Markdown).",
+      "Send the file. Inventory lists exactly what left the panel.",
+    ],
+  },
+  {
+    id: "report-ai-byok",
+    tags: ["ai", "export", "byok"],
+    q: "How does Report AI work?",
+    see: "Settings → Report AI; Export → Generate interpretation.",
+    fix: [
+      "Enable Report AI, set an OpenAI-compatible base URL (…/v1), model, and your API key (encrypted locally).",
+      "On Export, choose the same slice, pick a prompt preset, Generate interpretation.",
+      "Rules and sync never require AI. Chainepic metering is a separate commercial offer.",
     ],
   },
 ];
@@ -171,6 +214,28 @@ const zh: FaqItem[] = [
     ],
   },
   {
+    id: "sync-rate-limit",
+    tags: ["sync", "quota", "rate-limit", "gsc", "bing", "yandex"],
+    q: "同步卡住或报 429 / 配额 / 限流",
+    see: "部分主机失败；信息可能含 HTTP 429、503 或 quota。",
+    fix: [
+      "面板按主机逐个同步，目前不会对 429 自动退避 — 先等待再点「立即同步」。",
+      "主机较多时优先依赖每日定时任务，避免连续猛点同步。",
+      "API 使用固定行数上限（不会翻页导出全部 query）。见指南第 4 步与 docs/ops/SYNC-AND-HISTORY.md。",
+    ],
+  },
+  {
+    id: "history-windows",
+    tags: ["sync", "history", "settings", "gsc"],
+    q: "28 / 56 / 90 天历史窗口是什么意思？",
+    see: "设置 → 同步 / 界面历史窗口；总览有 7 天 / 28 天 / N 天。",
+    fix: [
+      "该值决定 GSC/Yandex 每次同步回填多少天，以及总览在 SQLite 里往回看多远。",
+      "Bing 的排名序列往往本来就更长；变动词始终是周环比。",
+      "加长窗口后请再同步。本地 SQLite 是日报/规则用的账本，不是一直开着的 GSC 网页。详见指南第 11 步 · docs/ops/SYNC-AND-HISTORY.md。",
+    ],
+  },
+  {
     id: "last-sync-time",
     tags: ["ui", "timezone"],
     q: "上次同步显示 2026-10-11T01:00:42.202Z",
@@ -178,6 +243,27 @@ const zh: FaqItem[] = [
     fix: [
       "已修复：按设置时区显示（如 Asia/Shanghai → 2026-10-11 09:00）。",
       "更新后刷新页面即可。",
+    ],
+  },
+  {
+    id: "export-share",
+    tags: ["export", "share"],
+    q: "怎么把数据给别人看？",
+    see: "单人面板 — 没有多人登录席位。",
+    fix: [
+      "打开「导出」→ 勾选站点 / 日期 / 表格 → 下载（JSON、CSV 或 Markdown）。",
+      "把文件发出去。Inventory 会列出本次离开面板的内容。",
+    ],
+  },
+  {
+    id: "report-ai-byok",
+    tags: ["ai", "export", "byok"],
+    q: "报告解读 AI 怎么用？",
+    see: "设置 → 报告解读；导出 → 生成解读。",
+    fix: [
+      "启用报告解读，填写 OpenAI 兼容 Base URL（…/v1）、模型与自备 API Key（本地加密）。",
+      "在导出页选同一切片与提示词预设，生成解读。",
+      "规则与同步从不依赖 AI。Chainepic 计量属于另售商业能力。",
     ],
   },
 ];

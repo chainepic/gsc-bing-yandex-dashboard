@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@search-triad/adapters-oss": "workspace:*",
     "@search-triad/connectors": "workspace:*",
     "@search-triad/core": "workspace:*",
     "better-sqlite3": "^11.8.1",

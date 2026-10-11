@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>I open-sourced a self-hosted dashboard for Google, Bing, and Yandex Search Console</title>
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #3d4f47;
+      --line: #d5ddd6;
+      --paper: #f7faf6;
+      --accent: #0f6b5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 18px/1.65 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+    .hint {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px 14px;
+      margin-bottom: 28px;
+      border-radius: 8px;
+    }
+    .hint code { font-size: 12px; }
+    article h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 2.1rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+    }
+    .dek {
+      font-size: 1.15rem;
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    article h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.45rem;
+      margin: 2.2rem 0 0.75rem;
+      letter-spacing: -0.01em;
+    }
+    article p { margin: 0 0 1.1rem; }
+    article ul { margin: 0 0 1.2rem; padding-left: 1.25rem; }
+    article li { margin: 0.35rem 0; }
+    article a { color: var(--accent); }
+    figure {
+      margin: 1.4rem 0 1.6rem;
+      padding: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    figcaption {
+      margin-top: 0.55rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .cta {
+      border-left: 3px solid var(--accent);
+      padding: 0.2rem 0 0.2rem 1rem;
+      margin: 1.6rem 0;
+    }
+    strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hint">
+      <strong>How to use:</strong> Open this file in a browser. Select from the title through the last paragraph (skip this gray box), copy, and paste into an X Article.
+      If images don’t survive paste, re-upload the PNGs from
+      <code>docs/screenshots/</code> in the repo (or drag from the page).
+      Prefer the English shots: <code>overview.png</code>, <code>sites.png</code>, <code>keywords.png</code>, <code>site-detail.png</code>, <code>digest.png</code>, <code>setup.png</code>.
+    </div>
+
+    <!-- ===== COPY FROM HERE ===== -->
+    <article>
+      <h1>I open-sourced a self-hosted dashboard for Google, Bing, and Yandex Search Console</h1>
+      <p class="dek">
+        One panel. Three official webmaster APIs. Zero SEO SaaS in the middle — and your API keys never leave your machine.
+      </p>
+
+      <p>
+        If you run more than a couple of sites, you already know the ritual:
+        open <strong>Google Search Console</strong>, check clicks,
+        open <strong>Bing Webmaster</strong>, check again,
+        then — if you care about RU / CIS traffic — open <strong>Yandex Webmaster</strong> and do it a third time.
+      </p>
+
+      <p>
+        I got tired of that. So I built a small self-hosted panel that pulls the three of them into one place,
+        syncs about 28 days of metrics, surfaces movers, and can push a daily Markdown/JSON digest to a webhook or email.
+      </p>
+
+      <p>
+        Today it’s open source under MIT, maintained by <strong>Chainepic LTD</strong>:
+      </p>
+
+      <p class="cta">
+        <strong>GitHub:</strong>
+        <a href="https://github.com/chainepic/gsc-bing-yandex-dashboard">github.com/chainepic/gsc-bing-yandex-dashboard</a>
+      </p>
+
+      <h2>Why self-hosted?</h2>
+
+      <p>
+        Most “unified SEO dashboards” want your Search Console OAuth and Bing API key in <em>their</em> cloud.
+        That might be fine for a marketing team. It’s a non-starter if you manage many properties, or you simply don’t want another vendor holding the keys to your traffic data.
+      </p>
+
+      <p>
+        This project takes the opposite path:
+      </p>
+
+      <ul>
+        <li>Talks only to the <strong>official</strong> GSC / Bing / Yandex APIs</li>
+        <li>Stores metrics in a local <strong>SQLite</strong> file</li>
+        <li>Encrypts secrets with your own <code>APP_SECRET</code> (AES-256-GCM)</li>
+        <li>Optional panel password for public hosts; open by default on localhost</li>
+      </ul>
+
+      <p>
+        Upgrade the code with <code>git pull</code>. Your data stays in <code>./data</code>. Nothing is uploaded to us.
+      </p>
+
+      <h2>What it looks like</h2>
+
+      <p>
+        The Overview gives you per-engine KPIs, sparklines, week / 28-day compare, coverage gaps, and a watchlist — without hopping consoles.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/overview.png"
+          alt="Overview dashboard with Google, Bing, and Yandex cards"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Overview — Google · Bing · Yandex in one glance (demo data: example.com)</figcaption>
+      </figure>
+
+      <p>
+        Sites view shows week clicks and week-over-week deltas side by side, plus where an engine is missing or dropping hard.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/sites.png"
+          alt="Sites table with cross-engine coverage gaps"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Sites — coverage gaps and WoW deltas by engine</figcaption>
+      </figure>
+
+      <p>
+        Keywords are unified across engines: query, host, clicks, impressions, position, and deltas, with client-side filters for plunges and “impressions up / clicks down” patterns.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/keywords.png"
+          alt="Keywords movers table across engines"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Keywords — movers across GSC, Bing, and Yandex</figcaption>
+      </figure>
+
+      <p>
+        Drill into a host and switch engine tabs for trends, query movers, and page movers.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/site-detail.png"
+          alt="Site detail with engine tabs and movers"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Site detail — engine tabs, trends, query &amp; page movers</figcaption>
+      </figure>
+
+      <h2>Daily digest, not another dashboard tab you’ll forget</h2>
+
+      <p>
+        Every morning (default 09:00 in your timezone) the panel can sync, build a digest, and push it via webhook or SMTP.
+        You can also generate on demand from the Digest page.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/digest.png"
+          alt="Daily digest history and generate actions"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Daily digest — history, preview, generate &amp; push</figcaption>
+      </figure>
+
+      <h2>Setup in minutes</h2>
+
+      <p>
+        There’s a four-step wizard. Connect any subset of the three engines — one is fine, three is better — pick properties, sync, done.
+        UI is available in <strong>English and Chinese</strong>.
+      </p>
+
+      <figure>
+        <img
+          src="https://raw.githubusercontent.com/chainepic/gsc-bing-yandex-dashboard/main/docs/screenshots/setup.png"
+          alt="Setup wizard connect engines step"
+          width="1440"
+          height="900"
+        />
+        <figcaption>Setup wizard — connect Google, Bing, and/or Yandex</figcaption>
+      </figure>
+
+      <p>Local quick start:</p>
+
+      <ul>
+        <li><code>pnpm install</code></li>
+        <li>Set a strong <code>APP_SECRET</code> in <code>apps/web/.env</code></li>
+        <li><code>pnpm dev</code> → open <code>http://localhost:3847/setup</code></li>
+        <li>Or Docker Compose if you prefer a single container</li>
+      </ul>
+
+      <h2>What’s free, what’s not (yet)</h2>
+
+      <p>
+        The self-hosted panel is <strong>MIT</strong>. Sync, movers, digests, rule-based recommendations — all yours to run on your metal.
+        I’m exploring an optional hosted cloud and metered AI assists later; neither is required to use the open-source app.
+        Details live in the repo under <code>docs/OPEN-CORE.md</code>.
+      </p>
+
+      <h2>Who this is for</h2>
+
+      <ul>
+        <li>Indie hackers and operators who already live in Search Console</li>
+        <li>Agencies / site portfolios that also care about Bing (and maybe Yandex)</li>
+        <li>Anyone who wants a morning digest instead of three browser tabs</li>
+        <li>People who refuse to paste webmaster credentials into another SaaS</li>
+      </ul>
+
+      <p>
+        It’s <em>not</em> Ahrefs, Semrush, or a keyword-research suite.
+        It’s a thin, honest control plane over the data you already own in the official webmaster tools.
+      </p>
+
+      <h2>Try it / break it / star it</h2>
+
+      <p>
+        Screenshots in this article use fictional <strong>example.com</strong> demo data — no customer sites.
+        If you self-host, your real numbers stay on your disk.
+      </p>
+
+      <p class="cta">
+        Repo, docs, and EN/ZH screenshots:<br />
+        <a href="https://github.com/chainepic/gsc-bing-yandex-dashboard">https://github.com/chainepic/gsc-bing-yandex-dashboard</a>
+      </p>
+
+      <p>
+        Issues and PRs welcome. If you run Bing + GSC (or all three) and this saves you a tab,
+        a star helps more people find it — and tell me what you want next.
+      </p>
+
+      <p>
+        — built by <strong>Chainepic LTD</strong>
+      </p>
+    </article>
+    <!-- ===== COPY TO HERE ===== -->
+  </div>
+</body>
+</html>

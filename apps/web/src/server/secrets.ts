@@ -33,6 +33,10 @@ export type AppSecrets = {
       to: string;
     };
   };
+  /** BYOK Report AI — user-owned API key; never sent to Chainepic. */
+  reportAi?: {
+    apiKey?: string;
+  };
 };
 
 const INSECURE_APP_SECRET_PLACEHOLDERS = new Set([
@@ -117,6 +121,9 @@ export function mergeSecrets(patch: Partial<AppSecrets>) {
         : current.notify?.smtp,
     };
   }
+  if (patch.reportAi) {
+    next.reportAi = { ...current.reportAi, ...definedFields(patch.reportAi) } as AppSecrets["reportAi"];
+  }
   saveSecrets(next);
   return next;
 }
@@ -129,6 +136,7 @@ export function secretsStatus() {
     yandex: Boolean(s.yandex?.accessToken || s.yandex?.refreshToken),
     webhook: Boolean(s.notify?.webhookUrl),
     smtp: Boolean(s.notify?.smtp?.host && s.notify?.smtp?.to),
+    reportAiKey: Boolean(s.reportAi?.apiKey),
   };
 }
 
