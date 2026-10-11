@@ -1,0 +1,58 @@
+name: Bug report
+description: Something is broken in the self-hosted panel
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. **Do not paste real API keys, OAuth tokens, or production host lists.**
+        Use `example.com` in repros. Security issues → see SECURITY.md (private report).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Tag, commit, or Docker image digest
+      placeholder: "v0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run the app?
+      options:
+        - pnpm dev / pnpm start
+        - Docker Compose
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Expected vs actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Redact secrets. Prefer text logs over images when possible.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I redacted credentials and real customer domains
+          required: true
+        - label: I searched existing issues for duplicates
+          required: true

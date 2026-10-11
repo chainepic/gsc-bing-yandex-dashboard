@@ -123,7 +123,7 @@ async function deliver(payload: DigestPayload) {
       await transport.sendMail({
         from: smtp.from || smtp.user,
         to: smtp.to,
-        subject: `Search Triad Daily ${payload.generatedOn}`,
+        subject: `GSC · Bing · Yandex Daily ${payload.generatedOn}`,
         text: payload.markdown,
       });
       notes.push("smtp ok");

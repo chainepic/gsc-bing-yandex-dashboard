@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an improvement for the open-source panel or hosted roadmap
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem first. See https://github.com/chainepic/gsc-bing-yandex-dashboard/blob/main/docs/OPEN-CORE.md
+        for what stays MIT vs what may ship as Chainepic SaaS / metered AI.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that is hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Optional sketch of UX or API
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Where should this live?
+      options:
+        - Open-source self-host (MIT tree)
+        - Chainepic hosted SaaS
+        - Metered AI / credits
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

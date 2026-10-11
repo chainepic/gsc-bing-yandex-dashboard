@@ -1,8 +1,15 @@
 {
   "name": "search-triad",
   "private": true,
-  "version": "0.3.0",
-  "description": "Self-hosted dashboard unifying Google Search Console, Bing Webmaster, and Yandex Webmaster",
+  "version": "0.3.1",
+  "description": "GSC · Bing · Yandex Dashboard — self-hosted panel by Chainepic LTD",
+  "author": "Chainepic LTD",
+  "license": "MIT",
+  "homepage": "https://github.com/chainepic/gsc-bing-yandex-dashboard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chainepic/gsc-bing-yandex-dashboard.git"
+  },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "pnpm --filter @search-triad/connectors build && pnpm --filter @search-triad/core build && pnpm --filter @search-triad/web dev",

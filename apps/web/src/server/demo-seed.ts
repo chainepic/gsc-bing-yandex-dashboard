@@ -182,7 +182,7 @@ export function seedDemoData() {
     }
   }
 
-  const markdown = `# Search Triad Daily (fixture)\n\nExample.com demo digest — not real traffic.\n`;
+  const markdown = `# GSC · Bing · Yandex Daily (fixture)\n\nExample.com demo digest — not real traffic.\n`;
   db.insert(digests)
     .values({
       generatedOn: new Date().toISOString().slice(0, 10),

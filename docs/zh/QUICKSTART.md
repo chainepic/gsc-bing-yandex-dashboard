@@ -1,6 +1,8 @@
 # GSC · Bing · Yandex 自托管看板
 
-[English README](../../README.md) · 仓库：[gsc-bing-yandex-dashboard](https://github.com/chainepic/gsc-bing-yandex-dashboard)
+由 **Chainepic LTD** 维护。产品名：**GSC · Bing · Yandex Dashboard**（仓库内码名 `search-triad`）。
+
+[English README](../../README.md) · [品牌说明](../BRANDING.md) · [开源与 SaaS 边界](../OPEN-CORE.md) · 仓库：[gsc-bing-yandex-dashboard](https://github.com/chainepic/gsc-bing-yandex-dashboard)
 
 ## 产品界面
 

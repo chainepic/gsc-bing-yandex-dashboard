@@ -17,7 +17,12 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#features">Features</a> ·
   <a href="#connect-search-engines">Connect engines</a> ·
-  <a href="docs/zh/QUICKSTART.md">中文快速开始</a>
+  <a href="docs/zh/QUICKSTART.md">中文快速开始</a> ·
+  <a href="docs/OPEN-CORE.md">Open core / SaaS</a>
+</p>
+
+<p align="center">
+  <sub>© 2026 <strong>Chainepic LTD</strong> · Product: <strong>GSC · Bing · Yandex Dashboard</strong> · Codename: <code>search-triad</code></sub>
 </p>
 
 ---
@@ -301,6 +306,16 @@ location / {
 
 Smoke check: `pnpm test:smoke` (add `BASE_URL=http://127.0.0.1:3847` for a live probe).
 
-## License
+Full policy: [SECURITY.md](SECURITY.md).
 
-[MIT](LICENSE)
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Brand & trademark: [docs/BRANDING.md](docs/BRANDING.md).
+Hosted SaaS / AI metering (does not replace MIT self-host): [docs/OPEN-CORE.md](docs/OPEN-CORE.md).
+
+## License & trademark
+
+Source code is [MIT](LICENSE), © **2026 Chainepic LTD**. See also [NOTICE](NOTICE).
+
+**GSC · Bing · Yandex Dashboard**, **Search Triad** (codename), and **Chainepic** are trademarks of Chainepic LTD. Google, Bing, Yandex, and related marks belong to their respective owners; this project is not affiliated with or endorsed by them.
