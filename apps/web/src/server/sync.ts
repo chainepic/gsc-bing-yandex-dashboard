@@ -8,7 +8,7 @@ import {
 } from "@search-triad/connectors";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db/client";
-import { keywordSnapshot, metricDaily, sites, syncRuns } from "./db/schema";
+import { hostEngineMeta, keywordSnapshot, metricDaily, sites, syncRuns } from "./db/schema";
 import { loadSecrets } from "./secrets";
 import { getSettings } from "./settings";
 import { ensureYandexAccessToken } from "./yandex-auth";
@@ -39,19 +39,25 @@ function gscAuthFromSecrets(): GscAuth | null {
   return null;
 }
 
-async function fetchSite(engine: EngineId, propertyId: string, timeZone: string): Promise<SiteWindowStats> {
+async function fetchSite(
+  engine: EngineId,
+  propertyId: string,
+  timeZone: string,
+  historyDays: number
+): Promise<SiteWindowStats> {
   const secrets = loadSecrets();
   if (engine === "gsc") {
     const auth = gscAuthFromSecrets();
     if (!auth) throw new Error("Google credentials missing");
-    return fetchGscSiteStats(auth, propertyId, timeZone);
+    return fetchGscSiteStats(auth, propertyId, timeZone, historyDays);
   }
   if (engine === "bing") {
     if (!secrets.bing?.apiKey) throw new Error("Bing API key missing");
+    // Bing rank series is typically multi-month; movers still use week windows.
     return fetchBingSiteStats(secrets.bing.apiKey, propertyId, timeZone);
   }
   const token = await ensureYandexAccessToken();
-  return fetchYandexSiteStats(token, propertyId, timeZone);
+  return fetchYandexSiteStats(token, propertyId, timeZone, historyDays);
 }
 
 function persistSite(siteId: number, host: string, engine: EngineId, stats: SiteWindowStats) {
@@ -130,15 +136,43 @@ function persistSite(siteId: number, host: string, engine: EngineId, stats: Site
       })
       .run();
   }
+
+  if (stats.meta && Object.keys(stats.meta).length) {
+    const updatedAt = new Date().toISOString();
+    const metaJson = JSON.stringify(stats.meta);
+    db.insert(hostEngineMeta)
+      .values({
+        engine,
+        host,
+        siteId,
+        updatedAt,
+        metaJson,
+      })
+      .onConflictDoUpdate({
+        target: [hostEngineMeta.engine, hostEngineMeta.siteId],
+        set: { host, updatedAt, metaJson },
+      })
+      .run();
+  }
 }
 
-function writeProgress(runId: number, detail: SyncDetail, status = "running") {
-  const message =
-    status === "running"
-      ? `Syncing ${detail.completed}/${detail.total}…`
-      : detail.errors.length
-        ? `Synced ${detail.ok}/${detail.total} sites; ${detail.errors.length} failed`
-        : `Synced ${detail.ok} sites`;
+function syncProgressMessage(detail: SyncDetail, status: string, locale: "en" | "zh") {
+  const zh = locale === "zh";
+  if (status === "running") {
+    return zh
+      ? `同步中 ${detail.completed}/${detail.total}…`
+      : `Syncing ${detail.completed}/${detail.total}…`;
+  }
+  if (detail.errors.length) {
+    return zh
+      ? `已同步 ${detail.ok}/${detail.total} 个站点；${detail.errors.length} 个失败`
+      : `Synced ${detail.ok}/${detail.total} sites; ${detail.errors.length} failed`;
+  }
+  return zh ? `已同步 ${detail.ok} 个站点` : `Synced ${detail.ok} sites`;
+}
+
+function writeProgress(runId: number, detail: SyncDetail, status = "running", locale: "en" | "zh" = "en") {
+  const message = syncProgressMessage(detail, status, locale);
   getDb()
     .update(syncRuns)
     .set({
@@ -172,18 +206,19 @@ export async function runSync(): Promise<SyncResult> {
 
   const byEngine: Record<EngineId, SiteWindowStats[]> = { gsc: [], bing: [], yandex: [] };
   const enabled = db.select().from(sites).where(eq(sites.enabled, true)).all();
+  const locale: "en" | "zh" = settings.uiLocale === "zh" ? "zh" : "en";
   const detail: SyncDetail = {
     total: enabled.length,
     completed: 0,
     ok: 0,
     errors: [],
   };
-  writeProgress(run.id, detail);
+  writeProgress(run.id, detail, "running", locale);
 
   for (const site of enabled) {
     const engine = site.engine as EngineId;
     try {
-      const stats = await fetchSite(engine, site.propertyId, settings.timeZone);
+      const stats = await fetchSite(engine, site.propertyId, settings.timeZone, settings.historyDays);
       persistSite(site.id, site.host, engine, stats);
       byEngine[engine].push(stats);
       detail.ok += 1;
@@ -196,11 +231,11 @@ export async function runSync(): Promise<SyncResult> {
       });
     }
     detail.completed += 1;
-    writeProgress(run.id, detail);
+    writeProgress(run.id, detail, "running", locale);
   }
 
   const status = detail.errors.length && detail.ok === 0 ? "error" : "ok";
-  const message = writeProgress(run.id, detail, status);
+  const message = writeProgress(run.id, detail, status, locale);
 
   return { runId: run.id, status, message, detail, byEngine };
 }

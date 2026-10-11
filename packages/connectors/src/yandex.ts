@@ -1,16 +1,34 @@
 import { addDays, normalizeHost, todayInTz } from "./dates.js";
+import type { SitemapEntry, UrlInspectionResult } from "./inspection.js";
 import type { DailyMetric, SiteRef, SiteWindowStats } from "./types.js";
 
 const API = "https://api.webmaster.yandex.net/v4";
 
+function networkErrorDetail(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  const cause = (err as Error & { cause?: unknown }).cause;
+  if (cause instanceof Error) {
+    const code = (cause as Error & { code?: string }).code;
+    return code ? `${cause.message} (${code})` : cause.message;
+  }
+  return err.message;
+}
+
 async function yandexFetch(token: string, path: string, userId?: number | string) {
   const url = `${API}${path.replace("{user-id}", String(userId ?? ""))}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `OAuth ${token}`,
-      "Content-Type": "application/json; charset=utf-8",
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `OAuth ${token}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  } catch (err) {
+    throw new Error(
+      `Yandex unreachable (${networkErrorDetail(err)}). Need reachability to api.webmaster.yandex.net (VPN/proxy node must open that host; see /faq#yandex-unreachable)`
+    );
+  }
   const text = await response.text();
   if (!response.ok) throw new Error(`Yandex ${path} HTTP ${response.status}: ${text.slice(0, 220)}`);
   return text ? JSON.parse(text) : {};
@@ -145,7 +163,8 @@ function historyToDaily(
 export async function fetchYandexSiteStats(
   token: string,
   hostId: string,
-  timeZone = "Asia/Shanghai"
+  timeZone = "Asia/Shanghai",
+  historyDays = 28
 ): Promise<SiteWindowStats> {
   const userId = await getYandexUserId(token);
   const today = todayInTz(timeZone);
@@ -153,6 +172,8 @@ export async function fetchYandexSiteStats(
   const weekStart = addDays(asOf, -6);
   const priorStart = addDays(asOf, -13);
   const priorEnd = addDays(asOf, -7);
+  const span = Math.min(90, Math.max(28, Math.floor(historyDays)));
+  const historyFrom = addDays(asOf, -(span - 1));
 
   const popularQs = new URLSearchParams();
   popularQs.set("order_by", "TOTAL_CLICKS");
@@ -162,7 +183,7 @@ export async function fetchYandexSiteStats(
   popularQs.set("limit", "20");
 
   const historyQs = new URLSearchParams();
-  historyQs.set("date_from", priorStart);
+  historyQs.set("date_from", historyFrom);
   historyQs.set("date_to", asOf);
   historyQs.append("query_indicator", "TOTAL_CLICKS");
   historyQs.append("query_indicator", "TOTAL_SHOWS");
@@ -214,13 +235,110 @@ export async function fetchYandexSiteStats(
     clickDelta: week.clicks - prior.clicks,
     impressionDelta: week.impressions - prior.impressions,
     daily: historyToDaily(clickSeries, showSeries),
-    queryGains: queries.filter((q: { clicks: number }) => q.clicks > 0).slice(0, 5),
+    queryGains: queries.filter((q: { clicks: number }) => q.clicks > 0).slice(0, 30),
     queryLosses: [],
     pageGains: [],
     pageLosses: [],
     meta: {
       sqi: summary.sqi ?? null,
       searchablePages: summary.searchable_pages_count ?? null,
+      excludedPages: summary.excluded_pages_count ?? null,
     },
   };
+}
+
+export async function listYandexSitemaps(token: string, hostId: string): Promise<SitemapEntry[]> {
+  const userId = await getYandexUserId(token);
+  const enc = encodeURIComponent(hostId);
+  const data = await yandexFetch(token, `/user/{user-id}/hosts/${enc}/sitemaps/?limit=100`, userId);
+  return (data.sitemaps || []).map(
+    (s: {
+      sitemap_url?: string;
+      last_access_date?: string;
+      errors_count?: number;
+      urls_count?: number;
+      sitemap_type?: string;
+      sources?: string[];
+    }) => ({
+      engine: "yandex" as const,
+      path: s.sitemap_url || "",
+      lastDownloaded: s.last_access_date ? String(s.last_access_date).slice(0, 10) : null,
+      errors: s.errors_count != null ? Number(s.errors_count) : null,
+      urlCount: s.urls_count != null ? Number(s.urls_count) : null,
+      isSitemapsIndex: s.sitemap_type === "INDEX_SITEMAP",
+      contents: (s.sources || []).join(", ") || s.sitemap_type || null,
+      status: Number(s.errors_count) > 0 ? "errors" : "ok",
+    })
+  );
+}
+
+/**
+ * Yandex has no GSC-style per-URL inspection. Within API limits we return host
+ * indexing status plus any matching recrawl-queue entry for the URL.
+ */
+export async function inspectYandexUrl(
+  token: string,
+  hostId: string,
+  url: string
+): Promise<UrlInspectionResult> {
+  try {
+    const userId = await getYandexUserId(token);
+    const enc = encodeURIComponent(hostId);
+    const [hostInfo, summary, queue] = await Promise.all([
+      yandexFetch(token, `/user/{user-id}/hosts/${enc}/`, userId).catch(() => ({})),
+      yandexFetch(token, `/user/{user-id}/hosts/${enc}/summary/`, userId).catch(() => ({})),
+      yandexFetch(token, `/user/{user-id}/hosts/${enc}/recrawl/queue/?limit=100`, userId).catch(() => ({
+        tasks: [],
+      })),
+    ]);
+    const details: string[] = [];
+    const hostStatus = hostInfo.host_data_status || null;
+    if (hostStatus) details.push(`Host data status: ${hostStatus}`);
+    if (summary.sqi != null) details.push(`SQI: ${summary.sqi}`);
+    if (summary.searchable_pages_count != null) {
+      details.push(`Searchable pages: ${summary.searchable_pages_count}`);
+    }
+    if (summary.excluded_pages_count != null) {
+      details.push(`Excluded pages: ${summary.excluded_pages_count}`);
+    }
+    const tasks = Array.isArray(queue.tasks) ? queue.tasks : [];
+    const match = tasks.find(
+      (t: { url?: string }) => String(t.url || "").replace(/\/$/, "") === url.replace(/\/$/, "")
+    );
+    if (match) {
+      details.push(`Recrawl task: ${match.state || "unknown"} (added ${match.added_time || "—"})`);
+    } else {
+      details.push(
+        "No per-URL index inspection on Yandex API; showing host summary. Recrawl queue has no match for this URL."
+      );
+    }
+    const verdict = match?.state
+      ? `Recrawl: ${match.state}`
+      : hostStatus === "OK"
+        ? "Host indexed (no URL-level verdict)"
+        : hostStatus
+          ? `Host: ${hostStatus}`
+          : "Host summary only";
+    return {
+      engine: "yandex",
+      url,
+      siteUrl: hostId,
+      ok: true,
+      verdict,
+      indexingState: hostStatus || match?.state || null,
+      coverageState: hostStatus || null,
+      details,
+      raw: { hostInfo, summary, recrawlMatch: match || null },
+    };
+  } catch (err) {
+    return {
+      engine: "yandex",
+      url,
+      siteUrl: hostId,
+      ok: false,
+      verdict: "Error",
+      details: [],
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

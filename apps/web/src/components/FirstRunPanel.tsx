@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useT } from "@/components/LocaleProvider";
 import type { OnboardingProgress } from "@/lib/onboarding";
 
 type Props = {
@@ -7,41 +10,39 @@ type Props = {
 };
 
 export function FirstRunPanel({ progress }: Props) {
+  const t = useT();
   const nextHref = !progress.anyEngine || !progress.hasSites ? "/setup" : "/settings";
   const nextLabel = !progress.anyEngine
-    ? "Connect engines in Setup"
+    ? t("firstrun_cta_connect")
     : !progress.hasSites
-      ? "Select sites in Setup"
-      : "Run sync in Settings";
+      ? t("firstrun_cta_sites")
+      : t("firstrun_cta_sync");
 
   return (
     <section className="space-y-6 border-b border-line pb-8">
       <div>
         <p className="font-display text-3xl tracking-tight md:text-4xl">GSC · Bing · Yandex</p>
-        <h1 className="mt-3 font-display text-2xl">Get your first sync running</h1>
-        <p className="mt-2 max-w-xl text-sm text-ink/70">
-          This panel pulls clicks, impressions, and query movers from Google Search Console, Bing Webmaster,
-          and Yandex Webmaster into one SQLite-backed dashboard — plus a daily digest you can push by webhook or email.
-        </p>
+        <h1 className="mt-3 font-display text-2xl">{t("firstrun_title")}</h1>
+        <p className="mt-2 max-w-xl text-sm text-ink/70">{t("firstrun_body")}</p>
       </div>
 
       <ol className="space-y-3 text-sm">
         <Step done={progress.anyEngine} n={1}>
-          Connect at least one engine in{" "}
+          {t("firstrun_step1_before")}{" "}
           <Link href="/setup" className="text-accent underline decoration-line underline-offset-2">
-            Setup
+            {t("firstrun_step1_link")}
           </Link>{" "}
-          (skip any you do not need).
+          {t("firstrun_step1_after")}
         </Step>
         <Step done={progress.hasSites} n={2}>
-          Check the sites/properties to monitor, then finish the wizard.
+          {t("firstrun_step2")}
         </Step>
         <Step done={progress.hasSynced} n={3}>
-          Run{" "}
+          {t("firstrun_step3_before")}{" "}
           <Link href="/settings" className="text-accent underline decoration-line underline-offset-2">
-            Sync
+            {t("firstrun_step3_link")}
           </Link>{" "}
-          once — Overview, Sites, and Keywords fill after that.
+          {t("firstrun_step3_after")}
         </Step>
       </ol>
 
@@ -50,7 +51,7 @@ export function FirstRunPanel({ progress }: Props) {
           {nextLabel}
         </Link>
         <Link href="/guide" className="border border-line px-4 py-2 text-sm text-ink/80 hover:bg-mist/70">
-          Full guide
+          {t("firstrun_full_guide")}
         </Link>
       </div>
     </section>

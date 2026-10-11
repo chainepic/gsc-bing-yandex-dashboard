@@ -4,18 +4,22 @@
 
 ## 产品界面
 
-README 内嵌真实截图（example.com 演示数据）：
+README 内嵌截图均为 **example.com 假数据**（站点/关键词已打码），中英文各一份：
 
-- [Overview](../../docs/screenshots/overview.png)
-- [Sites](../../docs/screenshots/sites.png)
-- [Site detail](../../docs/screenshots/site-detail.png)
-- [Keywords](../../docs/screenshots/keywords.png)
-- [Keywords filtered](../../docs/screenshots/keywords-filtered.png)
-- [Digest](../../docs/screenshots/digest.png)
-- [Settings](../../docs/screenshots/settings.png)
-- [Guide](../../docs/screenshots/guide.png)
-- [Setup](../../docs/screenshots/setup.png)
-- [First-run](../../docs/screenshots/first-run.png)
+| 页面 | 英文 | 中文 |
+| --- | --- | --- |
+| 总览 | [overview](../../docs/screenshots/overview.png) | [overview-zh](../../docs/screenshots/overview-zh.png) |
+| 站点 | [sites](../../docs/screenshots/sites.png) | [sites-zh](../../docs/screenshots/sites-zh.png) |
+| 站点详情 | [site-detail](../../docs/screenshots/site-detail.png) | [site-detail-zh](../../docs/screenshots/site-detail-zh.png) |
+| 关键词 | [keywords](../../docs/screenshots/keywords.png) | [keywords-zh](../../docs/screenshots/keywords-zh.png) |
+| 日报 | [digest](../../docs/screenshots/digest.png) | [digest-zh](../../docs/screenshots/digest-zh.png) |
+| 设置 | [settings](../../docs/screenshots/settings.png) | [settings-zh](../../docs/screenshots/settings-zh.png) |
+| 指南 | [guide](../../docs/screenshots/guide.png) | [guide-zh](../../docs/screenshots/guide-zh.png) |
+| 安装向导 | [setup](../../docs/screenshots/setup.png) | [setup-zh](../../docs/screenshots/setup-zh.png) |
+| 首次引导 | [first-run](../../docs/screenshots/first-run.png) | [first-run-zh](../../docs/screenshots/first-run-zh.png) |
+| 建议 | [recommendations](../../docs/screenshots/recommendations.png) | [recommendations-zh](../../docs/screenshots/recommendations-zh.png) |
+
+重新生成：`BASE_URL=http://127.0.0.1:3848 pnpm screenshots`（需 `ALLOW_DEMO_SEED=1` 的独立演示库，勿指向含真实站点的 trial 数据）。
 
 ## 本地启动
 
@@ -43,7 +47,7 @@ APP_SECRET=$(openssl rand -hex 32) PANEL_PASSWORD='你的面板密码' docker co
 
 | 引擎 | 说明 |
 | --- | --- |
-| **Google Search Console** | OAuth 或服务账号；回调 `/api/oauth/google/callback` |
+| **Google Search Console** | **推荐 OAuth**（个人自用）；服务账号为进阶且需给每个资源单独加用户。回调 `/api/oauth/google/callback` |
 | **Bing Webmaster** | API Key |
 | **Yandex Webmaster** | OAuth，`webmaster:hostinfo` + `webmaster:verify` |
 

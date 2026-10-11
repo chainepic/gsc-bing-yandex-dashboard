@@ -23,7 +23,7 @@ export function aggregateKeyed(
 export function moversFromMaps(
   current: Map<string, Agg>,
   previous: Map<string, Agg>,
-  limit = 5
+  limit = 30
 ): { gains: KeywordRow[]; losses: KeywordRow[] } {
   const keys = new Set([...current.keys(), ...previous.keys()]);
   const rows: KeywordRow[] = [];

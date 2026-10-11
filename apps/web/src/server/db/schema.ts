@@ -76,3 +76,61 @@ export const digests = sqliteTable("digests", {
   delivered: integer("delivered", { mode: "boolean" }).notNull().default(false),
   deliveryNote: text("delivery_note"),
 });
+
+/** Latest on-page HTML snapshot for a URL (own hosts only). */
+export const pageSnapshots = sqliteTable(
+  "page_snapshots",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    host: text("host").notNull(),
+    url: text("url").notNull(),
+    fetchedAt: text("fetched_at").notNull(),
+    statusCode: integer("status_code"),
+    finalUrl: text("final_url"),
+    title: text("title"),
+    metaDescription: text("meta_description"),
+    h1: text("h1"),
+    canonical: text("canonical"),
+    robotsMeta: text("robots_meta"),
+    contentLength: integer("content_length").notNull().default(0),
+    issuesJson: text("issues_json").notNull().default("[]"),
+    error: text("error"),
+  },
+  (t) => [uniqueIndex("page_snapshots_url").on(t.url)]
+);
+
+/** Optional write actions audit (e.g. Bing URL submit). */
+export const auditLog = sqliteTable("audit_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  createdAt: text("created_at").notNull(),
+  action: text("action").notNull(),
+  host: text("host"),
+  detailJson: text("detail_json"),
+});
+
+/** Per-host engine extras (e.g. Yandex SQI) refreshed on sync. */
+export const hostEngineMeta = sqliteTable(
+  "host_engine_meta",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    engine: text("engine").notNull(),
+    host: text("host").notNull(),
+    siteId: integer("site_id").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    metaJson: text("meta_json").notNull().default("{}"),
+  },
+  (t) => [uniqueIndex("host_engine_meta_unique").on(t.engine, t.siteId)]
+);
+
+/** Persisted watchlist / site notes. */
+export const watchlist = sqliteTable(
+  "watchlist",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    host: text("host").notNull(),
+    watched: integer("watched", { mode: "boolean" }).notNull().default(true),
+    note: text("note").notNull().default(""),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("watchlist_host").on(t.host)]
+);

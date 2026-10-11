@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { addDays, normalizeHost, pickAsOf, todayInTz } from "./dates.js";
+import type { SitemapEntry, UrlInspectionResult } from "./inspection.js";
 import { aggregateKeyed, moversFromMaps } from "./movers.js";
 import type { DailyMetric, SiteRef, SiteWindowStats } from "./types.js";
 
@@ -77,12 +78,14 @@ async function queryRows(
 export async function fetchGscSiteStats(
   auth: GscAuth,
   siteUrl: string,
-  timeZone = "Asia/Shanghai"
+  timeZone = "Asia/Shanghai",
+  historyDays = 28
 ): Promise<SiteWindowStats> {
   const sc = getClient(auth);
   const today = todayInTz(timeZone);
   const rangeEnd = addDays(today, -2);
-  const rangeStart = addDays(rangeEnd, -27);
+  const span = Math.min(90, Math.max(28, Math.floor(historyDays))) - 1;
+  const rangeStart = addDays(rangeEnd, -span);
   const dateRows = await queryRows(sc, siteUrl, rangeStart, rangeEnd, ["date"], 1000);
   const daily: DailyMetric[] = dateRows.map((row) => ({
     date: row.keys?.[0] || "",
@@ -147,4 +150,78 @@ export async function fetchGscSiteStats(
     pageGains: pageMoves.gains,
     pageLosses: pageMoves.losses,
   };
+}
+
+export async function listGscSitemaps(auth: GscAuth, siteUrl: string): Promise<SitemapEntry[]> {
+  const sc = getClient(auth);
+  const res = await sc.sitemaps.list({ siteUrl });
+  return (res.data.sitemap || []).map((s) => ({
+    engine: "gsc" as const,
+    path: s.path || "",
+    lastSubmitted: s.lastSubmitted || null,
+    lastDownloaded: s.lastDownloaded || null,
+    isPending: Boolean(s.isPending),
+    isSitemapsIndex: Boolean(s.isSitemapsIndex),
+    warnings: s.warnings != null ? Number(s.warnings) : null,
+    errors: s.errors != null ? Number(s.errors) : null,
+    contents: (s.contents || []).map((c) => c.type).filter(Boolean).join(", ") || null,
+    status: s.errors && Number(s.errors) > 0 ? "errors" : s.isPending ? "pending" : "ok",
+  }));
+}
+
+export async function inspectGscUrl(
+  auth: GscAuth,
+  siteUrl: string,
+  inspectionUrl: string
+): Promise<UrlInspectionResult> {
+  const sc = getClient(auth);
+  try {
+    const res = await sc.urlInspection.index.inspect({
+      requestBody: {
+        inspectionUrl,
+        siteUrl,
+        languageCode: "en-US",
+      },
+    });
+    const result = res.data.inspectionResult;
+    const index = result?.indexStatusResult;
+    const details: string[] = [];
+    if (index?.coverageState) details.push(`Coverage: ${index.coverageState}`);
+    if (index?.indexingState) details.push(`Indexing: ${index.indexingState}`);
+    if (index?.robotsTxtState) details.push(`robots.txt: ${index.robotsTxtState}`);
+    if (index?.pageFetchState) details.push(`Fetch: ${index.pageFetchState}`);
+    if (index?.lastCrawlTime) details.push(`Last crawl: ${index.lastCrawlTime}`);
+    if (index?.sitemap?.length) details.push(`Sitemaps: ${index.sitemap.join(", ")}`);
+    if (index?.referringUrls?.length) {
+      details.push(`Referring URLs: ${index.referringUrls.slice(0, 3).join(", ")}`);
+    }
+    const verdict =
+      index?.verdict ||
+      index?.coverageState ||
+      (result ? "Inspected" : "No result");
+    return {
+      engine: "gsc",
+      url: inspectionUrl,
+      siteUrl,
+      ok: true,
+      verdict: String(verdict),
+      coverageState: index?.coverageState || null,
+      indexingState: index?.indexingState || null,
+      lastCrawlTime: index?.lastCrawlTime || null,
+      robotsTxtState: index?.robotsTxtState || null,
+      pageFetchState: index?.pageFetchState || null,
+      details,
+      raw: (result as Record<string, unknown>) || undefined,
+    };
+  } catch (err) {
+    return {
+      engine: "gsc",
+      url: inspectionUrl,
+      siteUrl,
+      ok: false,
+      verdict: "Error",
+      details: [],
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

@@ -28,66 +28,137 @@ Credentials stay on your server in `./data` (encrypted with `APP_SECRET`).
 
 ## Screenshots
 
-Demo UI with fictional **example.com** data (`ALLOW_DEMO_SEED=1`). Regenerate with `pnpm screenshots` while the app is running.
+Demo UI with fictional **example.com** hosts and placeholder keywords only (`ALLOW_DEMO_SEED=1`) — no real customer sites. Each page is captured in **English** and **Chinese** (`*-zh.png`).
 
-<p align="center">
-  <img src="docs/screenshots/overview.png" alt="Overview — Google, Bing, and Yandex cards with 28-day clicks and watchlist" width="920" />
-</p>
+Regenerate (dedicated demo DB, keep your trial instance on `:3847` untouched):
 
-<p align="center"><em>Overview — per-engine KPIs, sparklines, and cross-engine alerts</em></p>
+```bash
+# terminal A — fresh demo data dir on :3848
+rm -rf data-screenshots && mkdir data-screenshots
+cd apps/web && APP_SECRET='dev-secret-at-least-32-characters!!' \
+  DATA_DIR=../../data-screenshots ALLOW_DEMO_SEED=1 \
+  ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3848
+
+# terminal B
+BASE_URL=http://127.0.0.1:3848 pnpm screenshots
+```
+
+### Overview
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/screenshots/sites.png" alt="Sites table with GSC, Bing, Yandex week-over-week deltas" />
-      <p align="center"><em>Sites — week clicks &amp; Δ by engine</em></p>
+      <img src="docs/screenshots/overview.png" alt="Overview (English)" />
+      <p align="center"><em>Overview — EN</em></p>
     </td>
     <td width="50%">
-      <img src="docs/screenshots/site-detail.png" alt="Site detail with Google Bing Yandex engine tabs and query/page movers" />
-      <p align="center"><em>Site detail — engine tabs, trends, query &amp; page movers</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/screenshots/keywords.png" alt="Keywords movers across Google Bing Yandex" />
-      <p align="center"><em>Keywords — unified movers table</em></p>
-    </td>
-    <td width="50%">
-      <img src="docs/screenshots/keywords-filtered.png" alt="Keywords table filtered to pricing queries" />
-      <p align="center"><em>Keywords — client-side filter</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/screenshots/digest.png" alt="Daily digest history and generate buttons" />
-      <p align="center"><em>Daily digest — history, preview, generate &amp; push</em></p>
-    </td>
-    <td width="50%">
-      <img src="docs/screenshots/settings.png" alt="Settings with schedule, webhook, SMTP, and sync" />
-      <p align="center"><em>Settings — schedule, webhook, SMTP, sync</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/screenshots/guide.png" alt="Usage guide with onboarding progress checklist" />
-      <p align="center"><em>Guide — onboarding checklist</em></p>
-    </td>
-    <td width="50%">
-      <img src="docs/screenshots/setup.png" alt="Setup wizard connect engines step" />
-      <p align="center"><em>Setup wizard — connect engines</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/screenshots/first-run.png" alt="First-run guidance on Overview before engines are connected" />
-      <p align="center"><em>First-run guidance</em></p>
-    </td>
-    <td width="50%">
-      <img src="docs/screenshots/settings-smtp.png" alt="Settings scrolled to SMTP email digest fields" />
-      <p align="center"><em>SMTP digest delivery</em></p>
+      <img src="docs/screenshots/overview-zh.png" alt="Overview (Chinese)" />
+      <p align="center"><em>总览 — 中文</em></p>
     </td>
   </tr>
 </table>
+
+### Sites · Keywords · Site detail
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/sites.png" alt="Sites (English)" />
+      <p align="center"><em>Sites — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/sites-zh.png" alt="Sites (Chinese)" />
+      <p align="center"><em>站点 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/keywords.png" alt="Keywords (English)" />
+      <p align="center"><em>Keywords — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/keywords-zh.png" alt="Keywords (Chinese)" />
+      <p align="center"><em>关键词 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/site-detail.png" alt="Site detail (English)" />
+      <p align="center"><em>Site detail — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/site-detail-zh.png" alt="Site detail (Chinese)" />
+      <p align="center"><em>站点详情 — 中文</em></p>
+    </td>
+  </tr>
+</table>
+
+### Digest · Settings · Guide · Setup
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/digest.png" alt="Digest (English)" />
+      <p align="center"><em>Digest — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/digest-zh.png" alt="Digest (Chinese)" />
+      <p align="center"><em>日报 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/settings.png" alt="Settings (English)" />
+      <p align="center"><em>Settings — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/settings-zh.png" alt="Settings (Chinese)" />
+      <p align="center"><em>设置 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/guide.png" alt="Guide (English)" />
+      <p align="center"><em>Guide — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/guide-zh.png" alt="Guide (Chinese)" />
+      <p align="center"><em>指南 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/setup.png" alt="Setup (English)" />
+      <p align="center"><em>Setup — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/setup-zh.png" alt="Setup (Chinese)" />
+      <p align="center"><em>安装向导 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/first-run.png" alt="First-run (English)" />
+      <p align="center"><em>First-run — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/first-run-zh.png" alt="First-run (Chinese)" />
+      <p align="center"><em>首次引导 — 中文</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/recommendations.png" alt="Recommendations (English)" />
+      <p align="center"><em>Recommendations — EN</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/recommendations-zh.png" alt="Recommendations (Chinese)" />
+      <p align="center"><em>建议 — 中文</em></p>
+    </td>
+  </tr>
+</table>
+
+More captures (FAQ, Inspect, Prompt, SMTP, engine tabs, filters): see [`docs/screenshots/`](docs/screenshots/) and `manifest.json`.
 
 ## Features
 
@@ -167,7 +238,7 @@ ALLOW_DEMO_SEED=1 curl -X POST http://localhost:3847/api/demo/seed
 
 | Engine | Authentication | Setup notes |
 | --- | --- | --- |
-| **Google Search Console** | OAuth client (default) or service account JSON | Scope `webmasters.readonly`. Redirect: `https://YOUR_HOST/api/oauth/google/callback` |
+| **Google Search Console** | **OAuth (recommended)**; service account is advanced | Scope `webmasters.readonly`. Redirect: `https://YOUR_HOST/api/oauth/google/callback`. SA must be added as a user on each GSC property or the app lists 0 sites. |
 | **Bing Webmaster** | API key | Verified sites via Webmaster API |
 | **Yandex Webmaster** | OAuth + access token | Scopes `webmaster:hostinfo`, `webmaster:verify` |
 

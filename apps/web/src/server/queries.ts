@@ -1,7 +1,13 @@
-import type { EngineId } from "@search-triad/connectors";
+import {
+  coverageStatusForEngine,
+  type AnomalyPresetId,
+  type CoverageStatus,
+  type EngineId,
+  matchesAnomalyPreset,
+} from "@search-triad/connectors";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "./db/client";
-import { keywordSnapshot, metricDaily, sites, syncRuns } from "./db/schema";
+import { hostEngineMeta, keywordSnapshot, metricDaily, sites, syncRuns } from "./db/schema";
 
 export function listSites() {
   return getDb().select().from(sites).orderBy(sites.host).all();
@@ -112,14 +118,157 @@ export function siteDetail(host: string) {
   return engines;
 }
 
-export function listKeywords(limit = 200) {
-  return getDb()
+export function listKeywords(limit = 200, kind: "query" | "page" | "all" = "query") {
+  const db = getDb();
+  if (kind === "all") {
+    return db
+      .select()
+      .from(keywordSnapshot)
+      .orderBy(desc(sql`abs(${keywordSnapshot.clickDelta})`))
+      .limit(limit)
+      .all();
+  }
+  return db
     .select()
     .from(keywordSnapshot)
-    .where(eq(keywordSnapshot.kind, "query"))
+    .where(eq(keywordSnapshot.kind, kind))
     .orderBy(desc(sql`abs(${keywordSnapshot.clickDelta})`))
     .limit(limit)
     .all();
+}
+
+export type CoverageEngineCell = {
+  engine: EngineId;
+  connected: boolean;
+  weekClicks: number;
+  weekImpressions: number;
+  clickDelta: number;
+  impressionDelta: number;
+  status: CoverageStatus;
+  asOf: string | null;
+};
+
+export type CoverageGapRow = {
+  host: string;
+  engines: Record<EngineId, CoverageEngineCell | null>;
+};
+
+/** Same-host coverage / traffic gap across GSC · Bing · Yandex. */
+export function coverageGapTable(): CoverageGapRow[] {
+  const comparisons = siteComparison();
+  const byHost = new Map<string, typeof comparisons>();
+  for (const row of comparisons) {
+    const list = byHost.get(row.host) || [];
+    list.push(row);
+    byHost.set(row.host, list);
+  }
+  const hosts = [...byHost.keys()].sort();
+  return hosts.map((host) => {
+    const list = byHost.get(host) || [];
+    const engines = { gsc: null, bing: null, yandex: null } as CoverageGapRow["engines"];
+    for (const engine of ["gsc", "bing", "yandex"] as EngineId[]) {
+      const hit = list.find((r) => r.engine === engine);
+      if (!hit) {
+        engines[engine] = {
+          engine,
+          connected: false,
+          weekClicks: 0,
+          weekImpressions: 0,
+          clickDelta: 0,
+          impressionDelta: 0,
+          status: "no_data",
+          asOf: null,
+        };
+        continue;
+      }
+      const cell = {
+        engine,
+        connected: true,
+        weekClicks: hit.weekClicks,
+        weekImpressions: hit.weekImpressions,
+        clickDelta: hit.clickDelta,
+        impressionDelta: hit.impressionDelta,
+        asOf: hit.asOf,
+        status: coverageStatusForEngine({
+          connected: true,
+          weekClicks: hit.weekClicks,
+          weekImpressions: hit.weekImpressions,
+          clickDelta: hit.clickDelta,
+          impressionDelta: hit.impressionDelta,
+        }),
+      };
+      engines[engine] = cell;
+    }
+    return { host, engines };
+  });
+}
+
+export type CrossEngineMover = {
+  key: string;
+  kind: "query" | "page";
+  host: string;
+  byEngine: Partial<
+    Record<
+      EngineId,
+      {
+        clicks: number;
+        impressions: number;
+        ctr: number;
+        position: number | null;
+        clickDelta: number;
+        impressionDelta: number;
+      }
+    >
+  >;
+};
+
+/** Align movers by key across engines for one host (blank when missing). */
+export function crossEngineMovers(host: string, kind: "query" | "page" = "query", limit = 40): CrossEngineMover[] {
+  const snapshots = getDb()
+    .select()
+    .from(keywordSnapshot)
+    .where(and(eq(keywordSnapshot.host, host), eq(keywordSnapshot.kind, kind)))
+    .all();
+  const map = new Map<string, CrossEngineMover>();
+  for (const row of snapshots) {
+    const cur = map.get(row.query) || {
+      key: row.query,
+      kind,
+      host,
+      byEngine: {},
+    };
+    cur.byEngine[row.engine as EngineId] = {
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position || null,
+      clickDelta: row.clickDelta,
+      impressionDelta: row.impressionDelta,
+    };
+    map.set(row.query, cur);
+  }
+  return [...map.values()]
+    .sort((a, b) => {
+      const aMax = Math.max(
+        ...Object.values(a.byEngine).map((e) => Math.abs(e?.clickDelta || 0)),
+        0
+      );
+      const bMax = Math.max(
+        ...Object.values(b.byEngine).map((e) => Math.abs(e?.clickDelta || 0)),
+        0
+      );
+      return bMax - aMax;
+    })
+    .slice(0, limit);
+}
+
+export function filterMoversByPreset<T extends {
+  clicks: number;
+  impressions: number;
+  clickDelta: number;
+  impressionDelta: number;
+}>(rows: T[], preset: AnomalyPresetId): T[] {
+  return rows.filter((r) => matchesAnomalyPreset(r, preset));
 }
 
 export type SyncRunDetail = {
@@ -147,4 +296,21 @@ export function parseSyncDetail(detailJson: string | null | undefined): SyncRunD
 
 export function latestSync() {
   return getDb().select().from(syncRuns).orderBy(desc(syncRuns.id)).limit(1).get();
+}
+
+export function hostEngineMetaForHost(host: string) {
+  return getDb()
+    .select()
+    .from(hostEngineMeta)
+    .where(eq(hostEngineMeta.host, host))
+    .all()
+    .map((row) => {
+      let meta: Record<string, unknown> = {};
+      try {
+        meta = JSON.parse(row.metaJson) as Record<string, unknown>;
+      } catch {
+        meta = {};
+      }
+      return { engine: row.engine, updatedAt: row.updatedAt, meta };
+    });
 }

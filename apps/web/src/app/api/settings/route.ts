@@ -16,6 +16,24 @@ export async function POST(req: Request) {
       digestHour: body.digestHour,
       digestMinute: body.digestMinute,
       setupComplete: body.setupComplete,
+      digestIncludeRecommendations:
+        body.digestIncludeRecommendations === undefined
+          ? undefined
+          : Boolean(body.digestIncludeRecommendations),
+      crawlMaxUrlsPerHost:
+        body.crawlMaxUrlsPerHost === undefined ? undefined : Number(body.crawlMaxUrlsPerHost),
+      crawlConcurrency:
+        body.crawlConcurrency === undefined ? undefined : Number(body.crawlConcurrency),
+      bingUrlSubmitEnabled:
+        body.bingUrlSubmitEnabled === undefined ? undefined : Boolean(body.bingUrlSubmitEnabled),
+      historyDays: body.historyDays === undefined ? undefined : Number(body.historyDays),
+      uiLocale: body.uiLocale === "zh" || body.uiLocale === "en" ? body.uiLocale : undefined,
+      digestLocale: body.digestLocale === "zh" || body.digestLocale === "en" ? body.digestLocale : undefined,
+      digestSections: body.digestSections,
+      llmPolishEnabled:
+        body.llmPolishEnabled === undefined ? undefined : Boolean(body.llmPolishEnabled),
+      llmBaseUrl: typeof body.llmBaseUrl === "string" ? body.llmBaseUrl : undefined,
+      llmModel: typeof body.llmModel === "string" ? body.llmModel : undefined,
     });
     scheduleFromSettings();
     return NextResponse.json(next);

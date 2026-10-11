@@ -73,6 +73,47 @@ export function getDb() {
       delivered INTEGER NOT NULL DEFAULT 0,
       delivery_note TEXT
     );
+    CREATE TABLE IF NOT EXISTS page_snapshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      host TEXT NOT NULL,
+      url TEXT NOT NULL,
+      fetched_at TEXT NOT NULL,
+      status_code INTEGER,
+      final_url TEXT,
+      title TEXT,
+      meta_description TEXT,
+      h1 TEXT,
+      canonical TEXT,
+      robots_meta TEXT,
+      content_length INTEGER NOT NULL DEFAULT 0,
+      issues_json TEXT NOT NULL DEFAULT '[]',
+      error TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS page_snapshots_url ON page_snapshots(url);
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL,
+      action TEXT NOT NULL,
+      host TEXT,
+      detail_json TEXT
+    );
+    CREATE TABLE IF NOT EXISTS host_engine_meta (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      engine TEXT NOT NULL,
+      host TEXT NOT NULL,
+      site_id INTEGER NOT NULL,
+      updated_at TEXT NOT NULL,
+      meta_json TEXT NOT NULL DEFAULT '{}'
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS host_engine_meta_unique ON host_engine_meta(engine, site_id);
+    CREATE TABLE IF NOT EXISTS watchlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      host TEXT NOT NULL,
+      watched INTEGER NOT NULL DEFAULT 1,
+      note TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS watchlist_host ON watchlist(host);
   `);
 
   // Lightweight migrations for existing DBs created before kind / detail_json.

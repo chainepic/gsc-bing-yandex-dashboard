@@ -16,11 +16,24 @@ function auth(): GscAuth {
   throw new Error("Google not connected");
 }
 
+function humanizeGscError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const disabled =
+    /Search Console API has not been used/i.test(msg) ||
+    (/it is disabled/i.test(msg) && /searchconsole/i.test(msg));
+  if (!disabled) return msg;
+  const project = msg.match(/project[= ](\d+)/i)?.[1];
+  const link = project
+    ? `https://console.developers.google.com/apis/api/searchconsole.googleapis.com/overview?project=${project}`
+    : "https://console.cloud.google.com/apis/library/searchconsole.googleapis.com";
+  return `GSC_API_DISABLED: Enable Google Search Console API first — ${link}`;
+}
+
 export async function GET() {
   try {
     const sites = await listGscSites(auth());
     return NextResponse.json({ sites });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return NextResponse.json({ error: humanizeGscError(err) }, { status: 400 });
   }
 }

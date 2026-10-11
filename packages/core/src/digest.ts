@@ -1,9 +1,26 @@
 import type { EngineId, SiteWindowStats } from "@search-triad/connectors";
+import {
+  DEFAULT_DIGEST_SECTIONS,
+  digestHeading,
+  parseDigestSections,
+  type DigestLocale,
+  type DigestSections,
+} from "./digest-template.js";
+import {
+  recommendationsToMarkdown,
+  type Recommendation,
+} from "./rules.js";
 
 export type DigestInput = {
   generatedOn: string;
   timeZone: string;
   byEngine: Record<EngineId, SiteWindowStats[]>;
+  recommendations?: Recommendation[];
+  includeRecommendations?: boolean;
+  /** Section toggles — defaults all on. */
+  sections?: Partial<DigestSections> | DigestSections;
+  /** Digest Markdown language (UI may differ). */
+  locale?: DigestLocale;
 };
 
 export type DigestPayload = {
@@ -33,6 +50,7 @@ export type DigestPayload = {
     clicks: number;
     clickDelta: number;
   }>;
+  recommendations?: Recommendation[];
   markdown: string;
 };
 
@@ -54,6 +72,16 @@ function delta(n: number) {
 }
 
 export function buildDigest(input: DigestInput): DigestPayload {
+  const sections = parseDigestSections({
+    ...DEFAULT_DIGEST_SECTIONS,
+    ...input.sections,
+    recommendations:
+      input.includeRecommendations === false
+        ? false
+        : input.sections?.recommendations ?? DEFAULT_DIGEST_SECTIONS.recommendations,
+  });
+  const locale: DigestLocale = input.locale === "zh" ? "zh" : "en";
+
   const engines: DigestPayload["engines"] = (["gsc", "bing", "yandex"] as EngineId[]).map((engine) => {
     const sites = input.byEngine[engine] || [];
     const totals = sumSites(sites);
@@ -96,7 +124,11 @@ export function buildDigest(input: DigestInput): DigestPayload {
   }
   for (const row of sites) {
     if (row.gsc && row.bing && row.gsc.delta < 0 && row.bing.delta < 0) {
-      highlights.push(`${row.host} down on both Google and Bing week-over-week`);
+      highlights.push(
+        locale === "zh"
+          ? `${row.host} 在 Google 与 Bing 周环比双降`
+          : `${row.host} down on both Google and Bing week-over-week`
+      );
       break;
     }
   }
@@ -129,42 +161,65 @@ export function buildDigest(input: DigestInput): DigestPayload {
   topKeywordMoves.sort((a, b) => Math.abs(b.clickDelta) - Math.abs(a.clickDelta));
 
   const lines: string[] = [];
-  lines.push(`# Search Triad Daily ${input.generatedOn}`);
+  lines.push(`# ${digestHeading(locale, "title")} ${input.generatedOn}`);
   lines.push("");
-  lines.push(`Timezone: ${input.timeZone}`);
+  lines.push(`${digestHeading(locale, "timezone")}: ${input.timeZone}`);
   lines.push("");
-  lines.push("## Engines");
-  lines.push("");
-  for (const e of engines) {
-    lines.push(
-      `- **${e.engine.toUpperCase()}** as of ${e.asOf || "—"}: ${e.weekClicks} clicks (${delta(e.weekClickDelta)}), ${e.weekImpressions} impressions (${delta(e.weekImpressionDelta)}), ${e.siteCount} sites`
-    );
+
+  if (sections.engines) {
+    lines.push(`## ${digestHeading(locale, "engines")}`);
+    lines.push("");
+    for (const e of engines) {
+      lines.push(
+        `- **${e.engine.toUpperCase()}** as of ${e.asOf || "—"}: ${e.weekClicks} clicks (${delta(e.weekClickDelta)}), ${e.weekImpressions} impressions (${delta(e.weekImpressionDelta)}), ${e.siteCount} sites`
+      );
+    }
+    lines.push("");
   }
-  lines.push("");
-  if (highlights.length) {
-    lines.push("## Watch");
+
+  if (sections.watch && highlights.length) {
+    lines.push(`## ${digestHeading(locale, "watch")}`);
     lines.push("");
     for (const h of highlights.slice(0, 5)) lines.push(`- ${h}`);
     lines.push("");
   }
-  lines.push("## Sites");
-  lines.push("");
-  lines.push("| Host | Google | Δ | Bing | Δ | Yandex | Δ |");
-  lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: |");
-  for (const s of sites.slice(0, 25)) {
-    lines.push(
-      `| ${s.host} | ${s.gsc?.clicks ?? "—"} | ${s.gsc ? delta(s.gsc.delta) : "—"} | ${s.bing?.clicks ?? "—"} | ${s.bing ? delta(s.bing.delta) : "—"} | ${s.yandex?.clicks ?? "—"} | ${s.yandex ? delta(s.yandex.delta) : "—"} |`
-    );
+
+  if (sections.sites) {
+    lines.push(`## ${digestHeading(locale, "sites")}`);
+    lines.push("");
+    lines.push("| Host | Google | Δ | Bing | Δ | Yandex | Δ |");
+    lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: |");
+    for (const s of sites.slice(0, 25)) {
+      lines.push(
+        `| ${s.host} | ${s.gsc?.clicks ?? "—"} | ${s.gsc ? delta(s.gsc.delta) : "—"} | ${s.bing?.clicks ?? "—"} | ${s.bing ? delta(s.bing.delta) : "—"} | ${s.yandex?.clicks ?? "—"} | ${s.yandex ? delta(s.yandex.delta) : "—"} |`
+      );
+    }
+    lines.push("");
   }
-  lines.push("");
-  lines.push("## Keyword movers");
-  lines.push("");
-  for (const row of topKeywordMoves.slice(0, 15)) {
-    lines.push(
-      `- [${row.engine}] ${row.host} ${row.direction} \`${row.key}\` → ${row.clicks} clicks (${delta(row.clickDelta)})`
-    );
+
+  if (sections.keywords) {
+    lines.push(`## ${digestHeading(locale, "keywords")}`);
+    lines.push("");
+    for (const row of topKeywordMoves.slice(0, 15)) {
+      lines.push(
+        `- [${row.engine}] ${row.host} ${row.direction} \`${row.key}\` → ${row.clicks} clicks (${delta(row.clickDelta)})`
+      );
+    }
+    lines.push("");
   }
-  lines.push("");
+
+  const recs = sections.recommendations ? input.recommendations || [] : [];
+  if (sections.recommendations && recs.length) {
+    lines.push(
+      recommendationsToMarkdown(recs, digestHeading(locale, "recommendations")).trimEnd()
+    );
+    lines.push("");
+  } else if (sections.recommendations) {
+    lines.push(`## ${digestHeading(locale, "recommendations")}`);
+    lines.push("");
+    lines.push(`- ${digestHeading(locale, "recs_empty")}`);
+    lines.push("");
+  }
 
   return {
     generatedOn: input.generatedOn,
@@ -173,6 +228,7 @@ export function buildDigest(input: DigestInput): DigestPayload {
     highlights: highlights.slice(0, 5),
     sites,
     topKeywordMoves: topKeywordMoves.slice(0, 30),
+    recommendations: recs.length ? recs.slice(0, 20) : undefined,
     markdown: lines.join("\n"),
   };
 }
@@ -185,3 +241,5 @@ export async function postWebhook(url: string, body: unknown) {
   });
   if (!res.ok) throw new Error(`Webhook HTTP ${res.status}`);
 }
+
+export * from "./digest-template.js";

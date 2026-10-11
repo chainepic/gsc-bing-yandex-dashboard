@@ -1,10 +1,14 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { GuideCredentialsSections } from "@/components/CredentialsHelp";
+import { t, type UiLocale } from "@/lib/i18n";
+import { getRequestUiLocale } from "@/lib/locale-server";
 import { getOnboardingProgress, type OnboardingProgress } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const locale = await getRequestUiLocale();
   const p = getOnboardingProgress();
   const doneCount = [
     p.appSecretOk,
@@ -18,138 +22,185 @@ export default function GuidePage() {
     <div className="mx-auto max-w-2xl space-y-12">
       <header className="space-y-3 border-b border-line pb-8">
         <p className="font-display text-4xl tracking-tight">GSC · Bing · Yandex</p>
-        <h1 className="font-display text-2xl">How to use this panel</h1>
-        <p className="max-w-xl text-sm text-ink/70">
-          Self-hosted Search Console + Webmaster dashboard. Connect engines, sync ~28 days of metrics, watch
-          sites and keywords, then push a daily Markdown digest.
+        <h1 className="font-display text-2xl">{t(locale, "guide_title")}</h1>
+        <p className="max-w-xl text-sm text-ink/70">{t(locale, "guide_sub")}</p>
+        <p className="text-sm">
+          {t(locale, "guide_also")}{" "}
+          <Link href="/prompt" className="text-accent underline decoration-line underline-offset-2">
+            {t(locale, "guide_prompt_link")}
+          </Link>{" "}
+          {t(locale, "guide_also_after")}
+          {" · "}
+          <Link href="/faq" className="text-accent underline decoration-line underline-offset-2">
+            {t(locale, "nav_faq")}
+          </Link>
         </p>
         <p className="font-mono text-xs text-ink/50">
-          Progress {doneCount}/5 core steps
-          {p.setupComplete ? "" : " · Setup not finished yet"}
+          {t(locale, "guide_progress", { n: doneCount })}
+          {p.setupComplete ? "" : t(locale, "guide_setup_incomplete")}
         </p>
       </header>
 
-      <GuideStep n={1} title="Secure credentials & the panel" done={p.appSecretOk}>
-        <p>
-          Set a unique <code className="font-mono text-xs">APP_SECRET</code> (16+ characters) in{" "}
-          <code className="font-mono text-xs">.env</code> before storing OAuth tokens or API keys. Generate with{" "}
-          <code className="font-mono text-xs">openssl rand -hex 32</code>.
-        </p>
-        <p className="mt-2">
-          If this host is reachable from the public internet, also set{" "}
-          <code className="font-mono text-xs">PANEL_PASSWORD</code> (or{" "}
-          <code className="font-mono text-xs">BASIC_AUTH_*</code>).{" "}
-          <code className="font-mono text-xs">GET /api/health</code> stays public for probes.
-        </p>
-        <StatusLine ok={p.appSecretOk} okLabel="APP_SECRET looks set" pendingLabel="APP_SECRET missing or insecure placeholder" />
+      <GuideStep locale={locale} n={1} title={t(locale, "guide_s1_title")} done={p.appSecretOk}>
+        <p>{t(locale, "guide_s1_p1")}</p>
+        <p className="mt-2">{t(locale, "guide_s1_p2")}</p>
+        <StatusLine ok={p.appSecretOk} okLabel={t(locale, "guide_s1_ok_secret")} pendingLabel={t(locale, "guide_s1_pending_secret")} />
         <StatusLine
           ok={p.panelAuthEnabled}
-          okLabel="Panel Basic Auth enabled"
-          pendingLabel="Panel auth unset (fine on localhost/LAN)"
+          okLabel={t(locale, "guide_s1_ok_auth")}
+          pendingLabel={t(locale, "guide_s1_pending_auth")}
           soft
         />
       </GuideStep>
 
-      <GuideStep n={2} title="Connect search engines" done={p.anyEngine} href="/setup" hrefLabel="Open Setup wizard">
-        <p>
-          Use the <strong className="font-medium">Setup</strong> wizard — do not paste secrets into random env vars for
-          engines. Connect any subset of Google, Bing, and Yandex; skip what you do not need.
-        </p>
+      <GuideStep
+        locale={locale}
+        n={2}
+        title={t(locale, "guide_s2_title")}
+        done={p.anyEngine}
+        href="/setup"
+        hrefLabel={t(locale, "guide_s2_href")}
+      >
+        <p>{t(locale, "guide_s2_p1")}</p>
         <ul className="mt-3 space-y-1.5 text-ink/75">
           <li>
-            <EngineDot color="var(--gsc)" /> <strong className="font-medium">Google</strong> — OAuth client (redirect{" "}
-            <code className="font-mono text-xs">/api/oauth/google/callback</code>) or service account JSON
+            <EngineDot color="var(--gsc)" /> <strong className="font-medium">Google</strong> — {t(locale, "guide_s2_g").replace("Google — ", "")}
           </li>
           <li>
-            <EngineDot color="var(--bing)" /> <strong className="font-medium">Bing</strong> — Webmaster API key
+            <EngineDot color="var(--bing)" /> <strong className="font-medium">Bing</strong> — {t(locale, "guide_s2_b").replace("Bing — ", "")}
           </li>
           <li>
-            <EngineDot color="var(--yandex)" /> <strong className="font-medium">Yandex</strong> — OAuth (scopes{" "}
-            <code className="font-mono text-xs">webmaster:hostinfo</code>,{" "}
-            <code className="font-mono text-xs">webmaster:verify</code>)
+            <EngineDot color="var(--yandex)" /> <strong className="font-medium">Yandex</strong> — {t(locale, "guide_s2_y").replace("Yandex — ", "")}
           </li>
         </ul>
+        <GuideCredentialsSections />
         <EngineStatus progress={p} />
       </GuideStep>
 
-      <GuideStep n={3} title="Select sites to monitor" done={p.hasSites} href="/setup" hrefLabel="Select sites in Setup">
-        <p>
-          After each engine connects, check the properties/hosts you care about. Nothing is monitored until you save
-          selection and finish (or save selection mid-wizard). You can re-run Setup anytime from Settings.
-        </p>
+      <GuideStep
+        locale={locale}
+        n={3}
+        title={t(locale, "guide_s3_title")}
+        done={p.hasSites}
+        href="/setup"
+        hrefLabel={t(locale, "guide_s3_href")}
+      >
+        <p>{t(locale, "guide_s3_p")}</p>
         <StatusLine
           ok={p.hasSites}
-          okLabel={`${p.siteCount} enabled site binding${p.siteCount === 1 ? "" : "s"}`}
-          pendingLabel="No sites selected yet"
+          okLabel={t(locale, "guide_s3_ok", { n: p.siteCount })}
+          pendingLabel={t(locale, "guide_s3_pending")}
         />
       </GuideStep>
 
-      <GuideStep n={4} title="Run a sync" done={p.hasSynced} href="/settings" hrefLabel="Settings → Sync">
-        <p>
-          Open Settings and click <strong className="font-medium">Run sync now</strong>. This pulls roughly 28 days of
-          performance data into SQLite. Daily cron also syncs before building the digest (default hour from Setup).
-        </p>
-        <StatusLine ok={p.hasSynced} okLabel="At least one successful sync (or metrics present)" pendingLabel="No successful sync yet" />
+      <GuideStep
+        locale={locale}
+        n={4}
+        title={t(locale, "guide_s4_title")}
+        done={p.hasSynced}
+        href="/settings"
+        hrefLabel={t(locale, "guide_s4_href")}
+      >
+        <p>{t(locale, "guide_s4_p")}</p>
+        <StatusLine ok={p.hasSynced} okLabel={t(locale, "guide_s4_ok")} pendingLabel={t(locale, "guide_s4_pending")} />
       </GuideStep>
 
-      <GuideStep n={5} title="Read Overview, Sites, and Keywords" done={p.hasMetrics}>
+      <GuideStep locale={locale} n={5} title={t(locale, "guide_s5_title")} done={p.hasMetrics}>
         <p>
           <Link href="/" className="text-accent underline decoration-line underline-offset-2">
-            Overview
-          </Link>{" "}
-          — per-engine 7/28-day clicks, sparklines, watchlist drops.
+            {t(locale, "nav_overview")}
+          </Link>
+          {" — "}
+          {t(locale, "guide_s5_overview").replace(/^Overview — /, "").replace(/^总览 — /, "")}
         </p>
         <p className="mt-2">
           <Link href="/sites" className="text-accent underline decoration-line underline-offset-2">
-            Sites
+            {t(locale, "nav_sites")}
           </Link>{" "}
-          — week clicks and week-over-week deltas; open a host for trends and query movers.
+          — {t(locale, "guide_s5_sites").replace(/^Sites — /, "").replace(/^站点 — /, "")}
         </p>
         <p className="mt-2">
           <Link href="/keywords" className="text-accent underline decoration-line underline-offset-2">
-            Keywords
+            {t(locale, "nav_keywords")}
           </Link>{" "}
-          — unified movers table across engines.
+          — {t(locale, "guide_s5_keywords").replace(/^Keywords — /, "").replace(/^关键词 — /, "")}
         </p>
-        <StatusLine ok={p.hasMetrics} okLabel="Metric rows present" pendingLabel="Waiting for sync data" />
+        <p className="mt-2">
+          <Link href="/recommendations" className="text-accent underline decoration-line underline-offset-2">
+            {t(locale, "nav_recommendations")}
+          </Link>{" "}
+          — {t(locale, "guide_s5_recs").replace(/^Recommendations — /, "").replace(/^建议 — /, "")}
+        </p>
+        <p className="mt-2">{t(locale, "guide_s5_onpage")}</p>
+        <StatusLine ok={p.hasMetrics} okLabel={t(locale, "guide_s5_ok")} pendingLabel={t(locale, "guide_s5_pending")} />
       </GuideStep>
 
       <GuideStep
+        locale={locale}
         n={6}
-        title="Notifications (webhook / SMTP)"
+        title={t(locale, "guide_s6_title")}
         done={p.hasNotify}
         href="/settings"
-        hrefLabel="Configure in Settings"
+        hrefLabel={t(locale, "guide_s6_href")}
       >
-        <p>
-          Optional. In Settings, save a webhook URL (Slack/Discord/generic HTTP) and/or SMTP so digests can be delivered
-          automatically after the daily job.
-        </p>
-        <StatusLine ok={p.hasNotify} okLabel="Webhook and/or SMTP configured" pendingLabel="No notify channel yet (optional)" soft />
+        <p>{t(locale, "guide_s6_p")}</p>
+        <StatusLine ok={p.hasNotify} okLabel={t(locale, "guide_s6_ok")} pendingLabel={t(locale, "guide_s6_pending")} soft />
       </GuideStep>
 
-      <GuideStep n={7} title="Run digests" done={p.hasDigest} href="/digest" hrefLabel="Open Digest">
-        <p>
-          Digest history lives under Digest. Use <strong className="font-medium">Generate &amp; push</strong> to build
-          Markdown/JSON on demand. Cron uses your timezone and digest hour from Setup/Settings.
-        </p>
-        <StatusLine ok={p.hasDigest} okLabel="At least one digest saved" pendingLabel="No digests yet" soft />
+      <GuideStep
+        locale={locale}
+        n={7}
+        title={t(locale, "guide_s7_title")}
+        done={p.hasDigest}
+        href="/digest"
+        hrefLabel={t(locale, "guide_s7_href")}
+      >
+        <p>{t(locale, "guide_s7_p")}</p>
+        <StatusLine ok={p.hasDigest} okLabel={t(locale, "guide_s7_ok")} pendingLabel={t(locale, "guide_s7_pending")} soft />
+      </GuideStep>
+
+      <GuideStep
+        locale={locale}
+        n={8}
+        title={t(locale, "guide_s8_title")}
+        done={p.hasSynced}
+        href="/inspect"
+        hrefLabel={t(locale, "guide_s8_href")}
+      >
+        <p>{t(locale, "guide_s8_p")}</p>
+      </GuideStep>
+
+      <GuideStep
+        locale={locale}
+        n={9}
+        title={t(locale, "guide_s9_title")}
+        done={p.hasMetrics}
+        href="/recommendations"
+        hrefLabel={t(locale, "guide_s9_href")}
+      >
+        <p>{t(locale, "guide_s9_p")}</p>
+      </GuideStep>
+
+      <GuideStep
+        locale={locale}
+        n={10}
+        title={t(locale, "guide_s10_title")}
+        done={p.hasSites}
+        href="/settings"
+        hrefLabel={t(locale, "guide_s10_href")}
+      >
+        <p>{t(locale, "guide_s10_p")}</p>
       </GuideStep>
 
       <footer className="border-t border-line pt-6 text-sm text-ink/60">
-        <p>
-          Stuck mid-OAuth? Stay in{" "}
-          <Link href="/setup" className="text-accent underline decoration-line underline-offset-2">
-            Setup
-          </Link>
-          — callbacks return there. Need to change bindings later? Settings → Re-run setup wizard.
-        </p>
+        <p>{t(locale, "guide_footer")}</p>
       </footer>
     </div>
   );
 }
 
 function GuideStep({
+  locale,
   n,
   title,
   done,
@@ -157,6 +208,7 @@ function GuideStep({
   hrefLabel,
   children,
 }: {
+  locale: UiLocale;
   n: number;
   title: string;
   done: boolean;
@@ -172,7 +224,7 @@ function GuideStep({
           {title}
         </h2>
         <span className={`font-mono text-xs ${done ? "text-[var(--ok)]" : "text-ink/45"}`}>
-          {done ? "Done" : "Todo"}
+          {done ? t(locale, "common_done") : t(locale, "common_todo")}
         </span>
       </div>
       <div className="text-sm leading-relaxed text-ink/80">{children}</div>

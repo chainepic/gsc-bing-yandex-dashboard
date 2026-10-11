@@ -1,11 +1,11 @@
 {
   "name": "@search-triad/web",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3847",
+    "dev": "next dev --hostname 0.0.0.0 --port 3847",
     "build": "next build",
-    "start": "next start --port 3847",
+    "start": "next start --hostname 0.0.0.0 --port 3847",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/server/db/migrate.ts",
     "lint": "tsc --noEmit"

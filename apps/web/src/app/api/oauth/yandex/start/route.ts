@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildYandexAuthUrl } from "@search-triad/connectors";
+import { requestOrigin } from "@/lib/request-origin";
 import { loadSecrets } from "@/server/secrets";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
     const secrets = loadSecrets();
     const clientId = secrets.yandex?.clientId;
     if (!clientId) throw new Error("Save Yandex client ID first");
-    const origin = new URL(req.url).origin;
+    const origin = requestOrigin(req);
     const redirectUri = `${origin}/api/oauth/yandex/callback`;
     const url = buildYandexAuthUrl(clientId, redirectUri);
     return NextResponse.json({ url, redirectUri });

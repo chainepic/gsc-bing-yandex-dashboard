@@ -1,4 +1,5 @@
 import { addDays, normalizeHost, pickAsOf, todayInTz } from "./dates.js";
+import type { SitemapEntry, UrlInspectionResult } from "./inspection.js";
 import { aggregateKeyed, moversFromMaps } from "./movers.js";
 import type { DailyMetric, SiteRef, SiteWindowStats } from "./types.js";
 
@@ -21,6 +22,20 @@ async function bingCall(apiKey: string, endpoint: string, params: Record<string,
   const response = await fetch(`${API}/${endpoint}?${query}`);
   const text = await response.text();
   if (!response.ok) throw new Error(`Bing ${endpoint} HTTP ${response.status}: ${text.slice(0, 200)}`);
+  const json = JSON.parse(text);
+  return json.d ?? json;
+}
+
+async function bingPost(apiKey: string, endpoint: string, body: Record<string, unknown>) {
+  const query = new URLSearchParams({ apikey: apiKey });
+  const response = await fetch(`${API}/${endpoint}?${query}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`Bing ${endpoint} HTTP ${response.status}: ${text.slice(0, 220)}`);
+  if (!text) return null;
   const json = JSON.parse(text);
   return json.d ?? json;
 }
@@ -67,17 +82,26 @@ function toDaily(rows: Array<{ Date?: unknown; Clicks?: number; Impressions?: nu
 }
 
 function aggBing(
-  rows: Array<{ Date?: unknown; Query?: string; Clicks?: number; Impressions?: number; AvgImpressionPosition?: number }>,
+  rows: Array<{
+    Date?: unknown;
+    Query?: string;
+    Page?: string;
+    Clicks?: number;
+    Impressions?: number;
+    AvgImpressionPosition?: number;
+  }>,
   start: string,
-  end: string
+  end: string,
+  keyField: "Query" | "Page" = "Query"
 ) {
   return aggregateKeyed(
     rows
       .map((row) => {
         const day = bingDateToIso(row.Date);
-        if (!day || !row.Query || day < start || day > end) return null;
+        const key = keyField === "Page" ? row.Page || row.Query : row.Query;
+        if (!day || !key || day < start || day > end) return null;
         return {
-          key: row.Query,
+          key,
           clicks: row.Clicks || 0,
           impressions: row.Impressions || 0,
           position: row.AvgImpressionPosition || null,
@@ -115,7 +139,10 @@ export async function fetchBingSiteStats(
   const week = sumBetween(rankRows, weekStart, asOf);
   const prior = sumBetween(rankRows, priorStart, priorEnd);
   const queryMoves = moversFromMaps(aggBing(queryRows, weekStart, asOf), aggBing(queryRows, priorStart, priorEnd));
-  const pageMoves = moversFromMaps(aggBing(pageRows, weekStart, asOf), aggBing(pageRows, priorStart, priorEnd));
+  const pageMoves = moversFromMaps(
+    aggBing(pageRows, weekStart, asOf, "Page"),
+    aggBing(pageRows, priorStart, priorEnd, "Page")
+  );
   return {
     host: normalizeHost(siteUrl),
     siteUrl,
@@ -131,4 +158,89 @@ export async function fetchBingSiteStats(
     pageGains: pageMoves.gains,
     pageLosses: pageMoves.losses,
   };
+}
+
+export async function listBingSitemaps(apiKey: string, siteUrl: string): Promise<SitemapEntry[]> {
+  const feeds = await bingCall(apiKey, "GetFeeds", { siteUrl });
+  if (!Array.isArray(feeds)) return [];
+  return feeds.map(
+    (f: {
+      Url?: string;
+      Status?: string;
+      LastCrawled?: unknown;
+      Submitted?: unknown;
+      UrlCount?: number;
+      Type?: string;
+    }) => ({
+      engine: "bing" as const,
+      path: f.Url || "",
+      lastSubmitted: bingDateToIso(f.Submitted),
+      lastDownloaded: bingDateToIso(f.LastCrawled),
+      urlCount: f.UrlCount != null ? Number(f.UrlCount) : null,
+      status: f.Status || null,
+      contents: f.Type || null,
+      isSitemapsIndex: String(f.Type || "").toLowerCase().includes("index"),
+      errors: String(f.Status || "").toLowerCase().includes("error") ? 1 : 0,
+    })
+  );
+}
+
+export async function inspectBingUrl(
+  apiKey: string,
+  siteUrl: string,
+  url: string
+): Promise<UrlInspectionResult> {
+  try {
+    const [info, traffic] = await Promise.all([
+      bingCall(apiKey, "GetUrlInfo", { siteUrl, url }),
+      bingCall(apiKey, "GetUrlTrafficInfo", { siteUrl, url }).catch(() => null),
+    ]);
+    const details: string[] = [];
+    const lastCrawl = bingDateToIso(info?.LastCrawledDate) || null;
+    const discovery = bingDateToIso(info?.DiscoveryDate) || null;
+    const httpStatus = info?.HttpStatus != null ? Number(info.HttpStatus) : null;
+    if (lastCrawl) details.push(`Last crawl: ${lastCrawl}`);
+    if (discovery) details.push(`Discovered: ${discovery}`);
+    if (httpStatus != null && httpStatus > 0) details.push(`HTTP status: ${httpStatus}`);
+    if (info?.DocumentSize != null) details.push(`Document size: ${info.DocumentSize}`);
+    if (info?.IsPage != null) details.push(`Is page: ${String(info.IsPage)}`);
+    if (info?.AnchorCount != null) details.push(`Anchor count: ${info.AnchorCount}`);
+    if (traffic) {
+      details.push(`Clicks: ${traffic.Clicks ?? 0}, impressions: ${traffic.Impressions ?? 0}`);
+    }
+    const crawled = Boolean(lastCrawl);
+    const verdict = crawled
+      ? httpStatus && httpStatus >= 400
+        ? `Crawled (HTTP ${httpStatus})`
+        : "Known to Bing"
+      : "No crawl record";
+    return {
+      engine: "bing",
+      url,
+      siteUrl,
+      ok: true,
+      verdict,
+      lastCrawlTime: lastCrawl,
+      httpStatus,
+      indexingState: crawled ? "crawled" : "unknown",
+      details,
+      raw: { info, traffic },
+    };
+  } catch (err) {
+    return {
+      engine: "bing",
+      url,
+      siteUrl,
+      ok: false,
+      verdict: "Error",
+      details: [],
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/** Submit a single URL for Bing indexing (write). Prefer SubmitUrl / URL Submission. */
+export async function submitBingUrl(apiKey: string, siteUrl: string, url: string): Promise<{ ok: boolean; raw: unknown }> {
+  const raw = await bingPost(apiKey, "SubmitUrl", { siteUrl, url });
+  return { ok: true, raw };
 }

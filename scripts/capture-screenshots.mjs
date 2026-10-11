@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
- * Capture product screenshots into docs/screenshots/.
+ * Capture product screenshots into docs/screenshots/ (English + Chinese).
+ *
+ * Uses fictional example.com demo data only (ALLOW_DEMO_SEED=1).
+ * Never point BASE_URL at a trial DB with real customer hosts.
  *
  * Prerequisites:
- *   1. App running on BASE_URL (default http://127.0.0.1:3847)
+ *   1. App running on BASE_URL (default http://127.0.0.1:3848)
  *   2. ALLOW_DEMO_SEED=1 and APP_SECRET set on the server
- *   3: npx playwright install chromium  (first time)
+ *   3. npx playwright install chromium  (first time)
  *
  * Usage:
- *   node scripts/capture-screenshots.mjs
- *   BASE_URL=http://127.0.0.1:3847 node scripts/capture-screenshots.mjs
+ *   BASE_URL=http://127.0.0.1:3848 node scripts/capture-screenshots.mjs
  */
 import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -19,24 +21,34 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "docs", "screenshots");
-const base = process.env.BASE_URL || "http://127.0.0.1:3847";
+const base = process.env.BASE_URL || "http://127.0.0.1:3848";
+const locales = ["en", "zh"];
 
-const shots = [
-  { name: "overview", path: "/", wait: "networkidle" },
-  { name: "sites", path: "/sites", wait: "networkidle" },
-  { name: "site-detail", path: "/sites/example.com", wait: "networkidle" },
-  { name: "site-detail-bing", path: "/sites/example.com", wait: "networkidle", after: clickEngineTab(/bing/i) },
-  { name: "site-detail-yandex", path: "/sites/example.com", wait: "networkidle", after: clickEngineTab(/yandex/i) },
-  { name: "site-detail-filtered", path: "/sites/example.com", wait: "networkidle", after: filterSiteMovers },
-  { name: "keywords", path: "/keywords", wait: "networkidle" },
-  { name: "keywords-filtered", path: "/keywords", wait: "networkidle", after: filterKeywords },
-  { name: "digest", path: "/digest", wait: "networkidle" },
-  { name: "settings", path: "/settings", wait: "networkidle" },
-  { name: "settings-smtp", path: "/settings", wait: "networkidle", after: scrollToSmtp },
-  { name: "guide", path: "/guide", wait: "networkidle" },
-  { name: "setup", path: "/setup", wait: "networkidle" },
-  { name: "setup-step2", path: "/setup", wait: "networkidle", after: advanceSetup },
+const filledShots = [
+  { name: "overview", path: "/" },
+  { name: "sites", path: "/sites" },
+  { name: "site-detail", path: "/sites/example.com" },
+  { name: "site-detail-bing", path: "/sites/example.com", after: clickEngineTab(/bing/i) },
+  { name: "site-detail-yandex", path: "/sites/example.com", after: clickEngineTab(/yandex/i) },
+  { name: "site-detail-filtered", path: "/sites/example.com", after: filterSiteMovers },
+  { name: "site-detail-docs", path: "/sites/docs.example.com" },
+  { name: "keywords", path: "/keywords" },
+  { name: "keywords-filtered", path: "/keywords", after: filterKeywords },
+  { name: "digest", path: "/digest" },
+  { name: "settings", path: "/settings" },
+  { name: "settings-smtp", path: "/settings", after: scrollToSmtp },
+  { name: "guide", path: "/guide" },
+  { name: "faq", path: "/faq" },
+  { name: "recommendations", path: "/recommendations" },
+  { name: "inspect", path: "/inspect" },
+  { name: "prompt", path: "/prompt" },
+  { name: "setup", path: "/setup" },
+  { name: "setup-step2", path: "/setup", after: advanceSetup },
 ];
+
+function fileName(name, locale) {
+  return locale === "en" ? `${name}.png` : `${name}-zh.png`;
+}
 
 function clickEngineTab(re) {
   return async (page) => {
@@ -54,7 +66,11 @@ function clickEngineTab(re) {
 }
 
 async function filterSiteMovers(page) {
-  const input = page.getByLabel(/filter/i).or(page.locator('input[placeholder*="ilter" i]')).first();
+  const input = page
+    .getByLabel(/filter|筛选|过滤/i)
+    .or(page.locator('input[placeholder*="ilter" i]'))
+    .or(page.locator('input[placeholder*="筛选"]'))
+    .first();
   if (await input.isVisible().catch(() => false)) {
     await input.fill("pricing");
     await page.waitForTimeout(400);
@@ -62,7 +78,12 @@ async function filterSiteMovers(page) {
 }
 
 async function filterKeywords(page) {
-  const input = page.getByLabel("Filter keywords").or(page.locator('input[placeholder*="earch" i]')).first();
+  const input = page
+    .getByLabel(/filter|筛选|过滤/i)
+    .or(page.locator('input[placeholder*="earch" i]'))
+    .or(page.locator('input[placeholder*="筛选"]'))
+    .or(page.locator('input[placeholder*="关键词"]'))
+    .first();
   if (await input.isVisible().catch(() => false)) {
     await input.fill("pricing");
     await page.waitForTimeout(400);
@@ -70,7 +91,7 @@ async function filterKeywords(page) {
 }
 
 async function scrollToSmtp(page) {
-  const smtp = page.getByText(/SMTP|email|mail/i).first();
+  const smtp = page.getByText(/SMTP|email|mail|邮件/i).first();
   if (await smtp.isVisible().catch(() => false)) {
     await smtp.scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
@@ -81,51 +102,73 @@ async function scrollToSmtp(page) {
 }
 
 async function advanceSetup(page) {
-  const next = page.getByRole("button", { name: /next|continue|skip/i }).first();
+  const next = page.getByRole("button", { name: /next|continue|skip|下一步|继续|跳过/i }).first();
   if (await next.isVisible().catch(() => false)) {
     await next.click();
     await page.waitForTimeout(500);
   }
 }
 
-async function seedDemo() {
-  const res = await fetch(`${base}/api/demo/seed`, { method: "POST" });
+async function postJson(urlPath, body) {
+  const res = await fetch(`${base}${urlPath}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
   const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`Demo seed failed (${res.status}): ${text}`);
-  }
+  if (!res.ok) throw new Error(`${urlPath} failed (${res.status}): ${text}`);
+  return text;
+}
+
+async function setLocale(locale) {
+  await postJson("/api/settings", { uiLocale: locale });
+}
+
+async function resetDemo() {
+  const text = await postJson("/api/demo/reset");
+  console.log("Reset demo:", text.slice(0, 120));
+}
+
+async function seedDemo() {
+  const text = await postJson("/api/demo/seed");
   console.log("Seeded demo:", text.slice(0, 200));
 }
 
-async function shoot(page, name, urlPath, after) {
+async function assertNoRealHosts(page) {
+  const html = await page.content();
+  const banned = ["obpai", "pokerjudge", "take.skin", "cs2hot", "bytedata", "easymake", "newname.ai", "hi.toys"];
+  const hit = banned.find((b) => html.toLowerCase().includes(b.toLowerCase()));
+  if (hit) {
+    throw new Error(`Screenshot page leaked real host/keyword fragment: ${hit}`);
+  }
+}
+
+async function shoot(page, name, urlPath, locale, after) {
   const url = `${base}${urlPath}`;
-  console.log("→", name, url);
+  const outName = fileName(name, locale);
+  console.log("→", locale, outName, url);
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(500);
   if (after) await after(page);
-  const file = path.join(outDir, `${name}.png`);
+  await assertNoRealHosts(page);
+  const file = path.join(outDir, outName);
   await page.screenshot({ path: file, fullPage: true });
   console.log("  saved", path.relative(root, file));
   return file;
 }
 
-async function captureFirstRun(page, written) {
-  // Mark setup complete with no engines/sites → Overview shows FirstRunPanel.
-  const res = await fetch(`${base}/api/settings`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ setupComplete: true, timeZone: "Asia/Shanghai", digestHour: 9, digestMinute: 0 }),
-  });
-  if (!res.ok) {
-    console.warn("Could not mark setup complete for first-run shot:", await res.text());
-    return;
-  }
-  written.push(await shoot(page, "first-run", "/"));
-  written.push(await shoot(page, "setup-empty", "/setup"));
-}
-
 async function main() {
   await mkdir(outDir, { recursive: true });
+
+  const health = await fetch(`${base}/api/health`)
+    .then((r) => r.json())
+    .catch(() => null);
+  if (!health?.ok) {
+    throw new Error(
+      `App not healthy at ${base}. Start a dedicated demo instance, e.g.\n` +
+        `  DATA_DIR=./data-screenshots ALLOW_DEMO_SEED=1 PORT=3848 …`
+    );
+  }
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -135,22 +178,28 @@ async function main() {
   const page = await context.newPage();
   const written = [];
 
-  // 1–2 first-run / empty guidance shots before demo seed fills the UI
-  await captureFirstRun(page, written);
+  for (const locale of locales) {
+    console.log(`\n=== Locale: ${locale} ===`);
+    await resetDemo();
+    await setLocale(locale);
+    written.push(await shoot(page, "first-run", "/", locale));
+    written.push(await shoot(page, "setup-empty", "/setup", locale));
 
-  await seedDemo();
+    await seedDemo();
+    await setLocale(locale);
 
-  for (const shot of shots) {
-    written.push(await shoot(page, shot.name, shot.path, shot.after));
+    for (const shot of filledShots) {
+      written.push(await shoot(page, shot.name, shot.path, locale, shot.after));
+    }
   }
-
-  written.push(await shoot(page, "site-detail-docs", "/sites/docs.example.com"));
 
   await browser.close();
 
   const manifest = {
     generatedAt: new Date().toISOString(),
     base,
+    locales,
+    note: "Fictional example.com demo data only — no real customer hosts/keywords",
     files: written.map((f) => path.relative(root, f)),
   };
   await writeFile(path.join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");

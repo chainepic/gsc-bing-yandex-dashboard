@@ -4,6 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { getDb } from "./db/client";
 import { digests, keywordSnapshot, metricDaily, sites } from "./db/schema";
+import { generateRecommendations } from "./recommendations";
 import { loadSecrets } from "./secrets";
 import { getSettings } from "./settings";
 import { runSync } from "./sync";
@@ -140,7 +141,18 @@ export async function runDigestJob(options: { syncFirst?: boolean; deliver?: boo
   }
   const byEngine = rebuildWindowsFromDb();
   const generatedOn = new Date().toLocaleDateString("en-CA", { timeZone: settings.timeZone });
-  const payload = buildDigest({ generatedOn, timeZone: settings.timeZone, byEngine });
+  const recommendations = settings.digestIncludeRecommendations
+    ? generateRecommendations({ limit: 20, locale: settings.digestLocale })
+    : [];
+  const payload = buildDigest({
+    generatedOn,
+    timeZone: settings.timeZone,
+    byEngine,
+    recommendations,
+    includeRecommendations: settings.digestIncludeRecommendations,
+    sections: settings.digestSections,
+    locale: settings.digestLocale,
+  });
   let deliveryNote: string | null = null;
   let delivered = false;
   if (options.deliver !== false) {

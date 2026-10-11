@@ -12,4 +12,8 @@ data-screenshots/
 .DS_Store
 coverage
 *.log
+.triad-trial.pid
 *.tsbuildinfo
+data-trial/
+apps/web/data-trial/
+.triad-dev.log

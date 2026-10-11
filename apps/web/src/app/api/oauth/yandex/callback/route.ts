@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { requestOrigin } from "@/lib/request-origin";
 import { storeYandexOAuthCode } from "@/server/yandex-auth";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  const origin = requestOrigin(req);
   const code = url.searchParams.get("code");
   const err = url.searchParams.get("error");
   const errDesc = url.searchParams.get("error_description");
@@ -36,20 +38,20 @@ if (token) {
 
   if (err) {
     return NextResponse.redirect(
-      new URL(`/setup?error=${encodeURIComponent(errDesc || err)}`, url.origin)
+      new URL(`/setup?error=${encodeURIComponent(errDesc || err)}`, origin)
     );
   }
   if (!code) {
-    return NextResponse.redirect(new URL("/setup?error=missing_yandex_code", url.origin));
+    return NextResponse.redirect(new URL("/setup?error=missing_yandex_code", origin));
   }
 
   try {
-    const redirectUri = `${url.origin}/api/oauth/yandex/callback`;
+    const redirectUri = `${origin}/api/oauth/yandex/callback`;
     await storeYandexOAuthCode(code, redirectUri);
-    return NextResponse.redirect(new URL("/setup?yandex=ok", url.origin));
+    return NextResponse.redirect(new URL("/setup?yandex=ok", origin));
   } catch (e) {
     return NextResponse.redirect(
-      new URL(`/setup?error=${encodeURIComponent(e instanceof Error ? e.message : String(e))}`, url.origin)
+      new URL(`/setup?error=${encodeURIComponent(e instanceof Error ? e.message : String(e))}`, origin)
     );
   }
 }

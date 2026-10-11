@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { LocaleProvider } from "@/components/LocaleProvider";
 import { Nav } from "@/components/Nav";
+import { getRequestUiLocale } from "@/lib/locale-server";
 
 const sans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -26,14 +28,18 @@ export const metadata: Metadata = {
   description: "Self-hosted dashboard for Google Search Console, Bing Webmaster Tools, and Yandex Webmaster",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getRequestUiLocale();
+
   return (
-    <html lang="en" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
+    <html lang={locale} className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">
-        <div className="shell">
-          <Nav />
-          <main className="mt-8">{children}</main>
-        </div>
+        <LocaleProvider locale={locale}>
+          <div className="shell">
+            <Nav />
+            <main className="mt-8">{children}</main>
+          </div>
+        </LocaleProvider>
       </body>
     </html>
   );

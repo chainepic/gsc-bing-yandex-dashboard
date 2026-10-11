@@ -88,22 +88,35 @@ export function saveSecrets(secrets: AppSecrets) {
   fs.writeFileSync(file, JSON.stringify(payload, null, 2));
 }
 
+/** Drop undefined / empty-string fields so blank Setup inputs never wipe stored secrets. */
+function definedFields(obj: object): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== "")
+  );
+}
+
 export function mergeSecrets(patch: Partial<AppSecrets>) {
   const current = loadSecrets();
-  const next: AppSecrets = {
-    ...current,
-    ...patch,
-    google: patch.google ? { ...current.google, ...patch.google } : current.google,
-    bing: patch.bing ? { ...current.bing, ...patch.bing } : current.bing,
-    yandex: patch.yandex ? { ...current.yandex, ...patch.yandex } : current.yandex,
-    notify: patch.notify
-      ? {
-          ...current.notify,
-          ...patch.notify,
-          smtp: patch.notify.smtp ? { ...current.notify?.smtp, ...patch.notify.smtp } : current.notify?.smtp,
-        }
-      : current.notify,
-  };
+  const next: AppSecrets = { ...current };
+  if (patch.google) {
+    next.google = { ...current.google, ...definedFields(patch.google) } as AppSecrets["google"];
+  }
+  if (patch.bing) {
+    next.bing = { ...current.bing, ...definedFields(patch.bing) } as AppSecrets["bing"];
+  }
+  if (patch.yandex) {
+    next.yandex = { ...current.yandex, ...definedFields(patch.yandex) } as AppSecrets["yandex"];
+  }
+  if (patch.notify) {
+    const { smtp: patchSmtp, ...notifyRest } = patch.notify;
+    next.notify = {
+      ...current.notify,
+      ...definedFields(notifyRest),
+      smtp: patchSmtp
+        ? ({ ...current.notify?.smtp, ...definedFields(patchSmtp) } as NonNullable<AppSecrets["notify"]>["smtp"])
+        : current.notify?.smtp,
+    };
+  }
   saveSecrets(next);
   return next;
 }
@@ -118,3 +131,33 @@ export function secretsStatus() {
     smtp: Boolean(s.notify?.smtp?.host && s.notify?.smtp?.to),
   };
 }
+
+import type { SecretsPublicMeta } from "@/lib/secrets-meta";
+
+/** Non-secret fields for Setup UI prefill (never returns client secrets / tokens / JSON keys). */
+export function secretsPublicMeta(): SecretsPublicMeta {
+  const s = loadSecrets();
+  const mode = s.google?.mode === "service_account" ? "service_account" : "oauth";
+  return {
+    google: {
+      connected: Boolean(s.google?.refreshToken || s.google?.serviceAccountJson),
+      mode,
+      clientId: s.google?.clientId || "",
+      hasClientSecret: Boolean(s.google?.clientSecret),
+      hasRefreshToken: Boolean(s.google?.refreshToken),
+      hasServiceAccount: Boolean(s.google?.serviceAccountJson),
+    },
+    bing: {
+      connected: Boolean(s.bing?.apiKey),
+      hasApiKey: Boolean(s.bing?.apiKey),
+    },
+    yandex: {
+      connected: Boolean(s.yandex?.accessToken || s.yandex?.refreshToken),
+      clientId: s.yandex?.clientId || "",
+      hasClientSecret: Boolean(s.yandex?.clientSecret),
+      hasToken: Boolean(s.yandex?.accessToken || s.yandex?.refreshToken),
+    },
+  };
+}
+
+export type { SecretsPublicMeta };
