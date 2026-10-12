@@ -96,6 +96,23 @@ function rebuildWindowsFromDb(): Record<EngineId, SiteWindowStats[]> {
   return byEngine;
 }
 
+async function postTelegram(botToken: string, chatId: string, text: string) {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text.slice(0, 4000),
+      disable_web_page_preview: true,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Telegram HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+  }
+}
+
 async function deliver(payload: DigestPayload) {
   const secrets = loadSecrets();
   const notes: string[] = [];
@@ -131,6 +148,14 @@ async function deliver(payload: DigestPayload) {
       notes.push(`smtp: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
+  if (secrets.notify?.telegram?.botToken && secrets.notify.telegram.chatId) {
+    try {
+      await postTelegram(secrets.notify.telegram.botToken, secrets.notify.telegram.chatId, payload.markdown);
+      notes.push("telegram ok");
+    } catch (err) {
+      notes.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
   return notes.join("; ") || "no delivery configured";
 }
 
@@ -141,8 +166,10 @@ export async function runDigestJob(options: { syncFirst?: boolean; deliver?: boo
   }
   const byEngine = rebuildWindowsFromDb();
   const generatedOn = new Date().toLocaleDateString("en-CA", { timeZone: settings.timeZone });
+  // Rule-card copy is zh/en only; Russian digests still use Chinese/English cards under Russian section titles.
+  const recLocale = settings.digestLocale === "zh" ? "zh" : "en";
   const recommendations = settings.digestIncludeRecommendations
-    ? generateRecommendations({ limit: 20, locale: settings.digestLocale })
+    ? generateRecommendations({ limit: 20, locale: recLocale })
     : [];
   const payload = buildDigest({
     generatedOn,

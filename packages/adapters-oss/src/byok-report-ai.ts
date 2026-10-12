@@ -36,39 +36,36 @@ export class ByokReportAiProvider implements ReportAiProvider {
     return Boolean(this.apiKey && this.baseUrl);
   }
 
+  /** Minimal round-trip to verify base URL + key + model before full interpret. */
+  async ping(): Promise<{ model: string; reply: string }> {
+    if (!this.isConfigured()) {
+      throw new Error("BYOK Report AI is missing base URL or API key.");
+    }
+    const json = await this.chatCompletions({
+      model: this.model,
+      temperature: 0,
+      max_tokens: 16,
+      messages: [{ role: "user", content: "Reply with exactly: OK" }],
+      timeoutMs: 30_000,
+    });
+    const reply = String(json.choices?.[0]?.message?.content || "").trim();
+    if (!reply) {
+      throw new Error("BYOK LLM returned an empty completion.");
+    }
+    return { model: json.model || this.model, reply };
+  }
+
   async interpret(req: ReportAiRequest): Promise<ReportAiResult> {
     if (!this.isConfigured()) {
       throw new Error("BYOK Report AI is missing base URL or API key.");
     }
     const messages = buildReportAiMessages(req);
-    const url = `${this.baseUrl}/chat/completions`;
-    const res = await this.fetchImpl(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0.2,
-        messages,
-      }),
-      signal: AbortSignal.timeout(120_000),
+    const json = await this.chatCompletions({
+      model: this.model,
+      temperature: 0.2,
+      messages,
+      timeoutMs: 120_000,
     });
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(`BYOK LLM HTTP ${res.status}: ${text.slice(0, 240)}`);
-    }
-    let json: {
-      choices?: Array<{ message?: { content?: string } }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-      model?: string;
-    };
-    try {
-      json = JSON.parse(text) as typeof json;
-    } catch {
-      throw new Error(`BYOK LLM returned non-JSON: ${text.slice(0, 180)}`);
-    }
     const markdown = String(json.choices?.[0]?.message?.content || "").trim();
     if (!markdown) {
       throw new Error("BYOK LLM returned an empty completion.");
@@ -82,5 +79,43 @@ export class ByokReportAiProvider implements ReportAiProvider {
         outputTokens: json.usage?.completion_tokens,
       },
     };
+  }
+
+  private async chatCompletions(body: {
+    model: string;
+    temperature: number;
+    messages: unknown[];
+    max_tokens?: number;
+    timeoutMs: number;
+  }) {
+    const url = `${this.baseUrl}/chat/completions`;
+    const payload: Record<string, unknown> = {
+      model: body.model,
+      temperature: body.temperature,
+      messages: body.messages,
+    };
+    if (body.max_tokens != null) payload.max_tokens = body.max_tokens;
+    const res = await this.fetchImpl(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(body.timeoutMs),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`BYOK LLM HTTP ${res.status}: ${text.slice(0, 240)}`);
+    }
+    try {
+      return JSON.parse(text) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        model?: string;
+      };
+    } catch {
+      throw new Error(`BYOK LLM returned non-JSON: ${text.slice(0, 180)}`);
+    }
   }
 }

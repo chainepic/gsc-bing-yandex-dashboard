@@ -314,3 +314,159 @@ export function hostEngineMetaForHost(host: string) {
       return { engine: row.engine, updatedAt: row.updatedAt, meta };
     });
 }
+
+export type CalendarDaySummary = {
+  date: string;
+  clicks: number;
+  impressions: number;
+};
+
+export type DayEngineTotal = {
+  engine: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  clickDelta: number;
+  impressionDelta: number;
+};
+
+export type DaySiteRow = {
+  engine: string;
+  host: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  clickDelta: number;
+  impressionDelta: number;
+};
+
+export type DayMetricsBundle = {
+  date: string;
+  prevDate: string | null;
+  engines: DayEngineTotal[];
+  sites: DaySiteRow[];
+  totals: { clicks: number; impressions: number; ctr: number };
+};
+
+function shiftIsoDate(iso: string, deltaDays: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
+function bundleForDate(
+  date: string,
+  byDate: Map<string, Array<{ engine: string; host: string; clicks: number; impressions: number; ctr: number; position: number }>>
+): DayMetricsBundle {
+  const prevDate = shiftIsoDate(date, -1);
+  const todayRows = byDate.get(date) || [];
+  const prevRows = byDate.get(prevDate) || [];
+  const prevKey = (engine: string, host: string) => `${engine}\0${host}`;
+  const prevMap = new Map(prevRows.map((r) => [prevKey(r.engine, r.host), r]));
+
+  const sites: DaySiteRow[] = todayRows
+    .map((r) => {
+      const prev = prevMap.get(prevKey(r.engine, r.host));
+      return {
+        engine: r.engine,
+        host: r.host,
+        clicks: r.clicks,
+        impressions: r.impressions,
+        ctr: r.impressions > 0 ? r.clicks / r.impressions : r.ctr || 0,
+        position: r.position || 0,
+        clickDelta: r.clicks - (prev?.clicks || 0),
+        impressionDelta: r.impressions - (prev?.impressions || 0),
+      };
+    })
+    .sort((a, b) => b.clicks - a.clicks || a.host.localeCompare(b.host));
+
+  const engines: DayEngineTotal[] = (["gsc", "bing", "yandex"] as const).map((engine) => {
+    const cur = sites.filter((s) => s.engine === engine);
+    const clicks = cur.reduce((s, r) => s + r.clicks, 0);
+    const impressions = cur.reduce((s, r) => s + r.impressions, 0);
+    const prevClicks = prevRows.filter((r) => r.engine === engine).reduce((s, r) => s + r.clicks, 0);
+    const prevImpr = prevRows.filter((r) => r.engine === engine).reduce((s, r) => s + r.impressions, 0);
+    return {
+      engine,
+      clicks,
+      impressions,
+      ctr: impressions > 0 ? clicks / impressions : 0,
+      clickDelta: clicks - prevClicks,
+      impressionDelta: impressions - prevImpr,
+    };
+  });
+
+  const clicks = sites.reduce((s, r) => s + r.clicks, 0);
+  const impressions = sites.reduce((s, r) => s + r.impressions, 0);
+
+  return {
+    date,
+    prevDate: prevRows.length ? prevDate : null,
+    engines,
+    sites,
+    totals: {
+      clicks,
+      impressions,
+      ctr: impressions > 0 ? clicks / impressions : 0,
+    },
+  };
+}
+
+/** Load calendar summaries + per-day site/engine rollups from metric_daily (one scan). */
+export function loadDayCalendar(days = 120): {
+  summaries: CalendarDaySummary[];
+  byDate: Record<string, DayMetricsBundle>;
+} {
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - Math.max(28, days));
+  const since = cutoff.toISOString().slice(0, 10);
+  const rows = getDb()
+    .select({
+      engine: metricDaily.engine,
+      host: metricDaily.host,
+      date: metricDaily.date,
+      clicks: metricDaily.clicks,
+      impressions: metricDaily.impressions,
+      ctr: metricDaily.ctr,
+      position: metricDaily.position,
+    })
+    .from(metricDaily)
+    .where(gte(metricDaily.date, since))
+    .orderBy(metricDaily.date)
+    .all();
+
+  const byDate = new Map<
+    string,
+    Array<{ engine: string; host: string; clicks: number; impressions: number; ctr: number; position: number }>
+  >();
+  for (const r of rows) {
+    const list = byDate.get(r.date) || [];
+    list.push({
+      engine: r.engine,
+      host: r.host,
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    });
+    byDate.set(r.date, list);
+  }
+
+  const dates = [...byDate.keys()].sort();
+  const summaries: CalendarDaySummary[] = dates.map((date) => {
+    const list = byDate.get(date) || [];
+    return {
+      date,
+      clicks: list.reduce((s, r) => s + r.clicks, 0),
+      impressions: list.reduce((s, r) => s + r.impressions, 0),
+    };
+  });
+
+  const map: Record<string, DayMetricsBundle> = {};
+  for (const date of dates) {
+    map[date] = bundleForDate(date, byDate);
+  }
+
+  return { summaries, byDate: map };
+}

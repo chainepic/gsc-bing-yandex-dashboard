@@ -3,6 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  matchesAnyEngineFilter,
+  type EngineFilterId,
+} from "@search-triad/connectors/filters";
+import { EngineFilterBar } from "@/components/EngineFilterBar";
 import { useT } from "@/components/LocaleProvider";
 import { EngineBadge } from "@/components/Stat";
 
@@ -41,14 +46,16 @@ export function RecommendationsPanel({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "engine" | "high">("all");
+  const [engine, setEngine] = useState<EngineFilterId>("all");
 
   const rows = useMemo(() => {
     return recommendations.filter((r) => {
+      if (!matchesAnyEngineFilter(r.engines, engine)) return false;
       if (filter === "engine") return Boolean(r.engineSpecific);
       if (filter === "high") return r.severity === "high";
       return true;
     });
-  }, [recommendations, filter]);
+  }, [recommendations, filter, engine]);
 
   const visible = compact ? rows.slice(0, 6) : rows;
 
@@ -124,6 +131,7 @@ export function RecommendationsPanel({
           )}
         </div>
       </div>
+      <EngineFilterBar value={engine} onChange={setEngine} />
       {!compact && (
         <p className="text-xs text-ink/45">
           {t("recs_export_hint")}{" "}

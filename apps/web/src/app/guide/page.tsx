@@ -141,7 +141,7 @@ export default async function GuidePage() {
         n={6}
         title={t(locale, "guide_s6_title")}
         done={p.hasNotify}
-        href="/settings"
+        href="/settings#notifications"
         hrefLabel={t(locale, "guide_s6_href")}
       >
         <p>{t(locale, "guide_s6_p")}</p>

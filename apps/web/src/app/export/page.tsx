@@ -3,7 +3,7 @@ import { ExportPanel } from "@/components/ExportPanel";
 import { t } from "@/lib/i18n";
 import { getRequestUiLocale } from "@/lib/locale-server";
 import { listSites } from "@/server/queries";
-import { reportAiStatus } from "@/server/report-ai";
+import { listReportAiReports, reportAiStatus } from "@/server/report-ai";
 import { getSettings } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,7 @@ export default async function ExportPage() {
   const settings = getSettings();
   const hosts = [...new Set(listSites().map((s) => s.host))].sort();
   const ai = reportAiStatus();
+  const reports = settings.reportAiSaveReports ? listReportAiReports(30) : [];
 
   return (
     <div className="space-y-6">
@@ -25,6 +26,8 @@ export default async function ExportPage() {
         historyDays={settings.historyDays}
         hosts={hosts}
         reportAiConfigured={ai.configured}
+        saveReports={settings.reportAiSaveReports}
+        initialReports={reports}
       />
     </div>
   );

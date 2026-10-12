@@ -2,9 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { matchesAnomalyPreset, type AnomalyPresetId } from "@search-triad/connectors/filters";
+import {
+  matchesAnomalyPreset,
+  matchesEngineFilter,
+  type AnomalyPresetId,
+  type EngineFilterId,
+} from "@search-triad/connectors/filters";
 import { AnomalyPresetBar } from "@/components/AnomalyPresetBar";
+import { EngineFilterBar } from "@/components/EngineFilterBar";
 import { useT } from "@/components/LocaleProvider";
+import {
+  SortableTh,
+  compareSortValues,
+  toggleSort,
+  type SortState,
+} from "@/components/SortableTh";
 import { Delta, EngineBadge, fmt, pct } from "@/components/Stat";
 
 export type SiteRow = {
@@ -19,15 +31,49 @@ export type SiteRow = {
   asOf: string | null;
 };
 
+type SortKey =
+  | "host"
+  | "engine"
+  | "asOf"
+  | "weekClicks"
+  | "clickDelta"
+  | "weekImpressions"
+  | "impressionDelta"
+  | "ctr";
+
+function valueFor(row: SiteRow, key: SortKey): string | number | null {
+  switch (key) {
+    case "host":
+      return row.host;
+    case "engine":
+      return row.engine;
+    case "asOf":
+      return row.asOf;
+    case "weekClicks":
+      return row.weekClicks;
+    case "clickDelta":
+      return row.clickDelta;
+    case "weekImpressions":
+      return row.weekImpressions;
+    case "impressionDelta":
+      return row.impressionDelta;
+    case "ctr":
+      return row.weekImpressions > 0 ? row.weekClicks / row.weekImpressions : 0;
+  }
+}
+
 export function SitesTable({ rows }: { rows: SiteRow[] }) {
   const t = useT();
   const [preset, setPreset] = useState<AnomalyPresetId>("all");
+  const [engine, setEngine] = useState<EngineFilterId>("all");
   const [windowDays, setWindowDays] = useState<"7" | "28">("7");
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortState<SortKey>>({ key: "clickDelta", dir: "asc" });
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return rows.filter((r) => {
+    const list = rows.filter((r) => {
+      if (!matchesEngineFilter(r.engine, engine)) return false;
       const moverLike = {
         clicks: r.weekClicks,
         impressions: r.weekImpressions,
@@ -42,9 +88,13 @@ export function SitesTable({ rows }: { rows: SiteRow[] }) {
         r.propertyId.toLowerCase().includes(needle)
       );
     });
-  }, [rows, preset, q]);
+    return [...list].sort((a, b) =>
+      compareSortValues(valueFor(a, sort.key), valueFor(b, sort.key), sort.dir)
+    );
+  }, [rows, preset, engine, q, sort]);
 
   const hosts = [...new Set(filtered.map((r) => r.host))].sort();
+  const sortHint = t("common_sort_hint");
 
   return (
     <section className="panel space-y-3 overflow-x-auto p-4">
@@ -72,6 +122,7 @@ export function SitesTable({ rows }: { rows: SiteRow[] }) {
           </select>
         </label>
       </div>
+      <EngineFilterBar value={engine} onChange={setEngine} />
       <AnomalyPresetBar value={preset} onChange={setPreset} />
       <p className="text-xs text-ink/50">
         {windowDays === "28" ? t("sites_delta_note_28") : t("sites_delta_note")}
@@ -79,14 +130,62 @@ export function SitesTable({ rows }: { rows: SiteRow[] }) {
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="text-ink/55">
           <tr>
-            <th className="pb-2 font-medium">{t("common_host")}</th>
-            <th className="pb-2 font-medium">{t("common_engine")}</th>
-            <th className="pb-2 font-medium">{t("common_as_of")}</th>
-            <th className="pb-2 font-medium">{t("common_clicks")}</th>
-            <th className="pb-2 font-medium">{t("common_delta_clicks")}</th>
-            <th className="pb-2 font-medium">{t("common_impressions")}</th>
-            <th className="pb-2 font-medium">{t("common_delta_impr")}</th>
-            <th className="pb-2 font-medium">{t("common_ctr")}</th>
+            <SortableTh
+              label={t("common_host")}
+              sortKey="host"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k, "asc"))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_engine")}
+              sortKey="engine"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k, "asc"))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_as_of")}
+              sortKey="asOf"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_clicks")}
+              sortKey="weekClicks"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_delta_clicks")}
+              sortKey="clickDelta"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k, "asc"))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_impressions")}
+              sortKey="weekImpressions"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_delta_impr")}
+              sortKey="impressionDelta"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k, "asc"))}
+              title={sortHint}
+            />
+            <SortableTh
+              label={t("common_ctr")}
+              sortKey="ctr"
+              sort={sort}
+              onSort={(k) => setSort((s) => toggleSort(s, k))}
+              title={sortHint}
+            />
           </tr>
         </thead>
         <tbody>

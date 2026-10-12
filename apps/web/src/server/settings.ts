@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import {
   DEFAULT_DIGEST_SECTIONS,
+  normalizeDigestLocale,
   parseDigestSections,
   type DigestLocale,
   type DigestSections,
@@ -37,6 +38,8 @@ export type AppSettings = {
   /** OpenAI-compatible Chat Completions base (…/v1). */
   reportAiBaseUrl: string;
   reportAiModel: string;
+  /** Persist Report AI markdown to SQLite — default ON. */
+  reportAiSaveReports: boolean;
 };
 
 const DEFAULTS: AppSettings = {
@@ -50,7 +53,7 @@ const DEFAULTS: AppSettings = {
   bingUrlSubmitEnabled: false,
   historyDays: 28,
   uiLocale: null,
-  digestLocale: "en",
+  digestLocale: "zh",
   digestSections: { ...DEFAULT_DIGEST_SECTIONS },
   llmPolishEnabled: false,
   llmBaseUrl: "http://127.0.0.1:11434",
@@ -58,6 +61,7 @@ const DEFAULTS: AppSettings = {
   reportAiEnabled: false,
   reportAiBaseUrl: "https://api.openai.com/v1",
   reportAiModel: "gpt-4o-mini",
+  reportAiSaveReports: true,
 };
 
 function intSetting(map: Record<string, string>, key: string, fallback: number, min: number, max: number) {
@@ -102,7 +106,7 @@ export function getSettings(): AppSettings {
     bingUrlSubmitEnabled: map.bingUrlSubmitEnabled === "true",
     historyDays: historyDaysOf(map),
     uiLocale: map.uiLocale === "zh" || map.uiLocale === "en" ? map.uiLocale : null,
-    digestLocale: map.digestLocale === "zh" ? "zh" : "en",
+    digestLocale: map.digestLocale ? normalizeDigestLocale(map.digestLocale) : DEFAULTS.digestLocale,
     digestSections,
     llmPolishEnabled: map.llmPolishEnabled === "true",
     llmBaseUrl: map.llmBaseUrl || DEFAULTS.llmBaseUrl,
@@ -110,6 +114,10 @@ export function getSettings(): AppSettings {
     reportAiEnabled: map.reportAiEnabled === "true",
     reportAiBaseUrl: map.reportAiBaseUrl || map.llmBaseUrl || DEFAULTS.reportAiBaseUrl,
     reportAiModel: map.reportAiModel || map.llmModel || DEFAULTS.reportAiModel,
+    reportAiSaveReports:
+      map.reportAiSaveReports === undefined
+        ? DEFAULTS.reportAiSaveReports
+        : map.reportAiSaveReports === "true",
   };
 }
 
@@ -148,6 +156,7 @@ export function setSettings(patch: Partial<AppSettings>) {
     reportAiEnabled: String(next.reportAiEnabled),
     reportAiBaseUrl: next.reportAiBaseUrl,
     reportAiModel: next.reportAiModel,
+    reportAiSaveReports: String(next.reportAiSaveReports),
   };
   // Only persist uiLocale when explicitly set (do not write "en" for unset → browser default).
   if (next.uiLocale === "zh" || next.uiLocale === "en") {

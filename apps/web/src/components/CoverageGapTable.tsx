@@ -1,12 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { CoverageStatus } from "@search-triad/connectors/filters";
+import type { CoverageStatus, EngineFilterId } from "@search-triad/connectors/filters";
+import type { EngineId } from "@search-triad/connectors";
+import { EngineFilterBar } from "@/components/EngineFilterBar";
 import { useT } from "@/components/LocaleProvider";
 import { Delta, EngineBadge, fmt } from "@/components/Stat";
 import type { I18nKey } from "@/lib/i18n";
-
-type EngineId = "gsc" | "bing" | "yandex";
 
 export type CoverageGapRow = {
   host: string;
@@ -26,6 +27,11 @@ export type CoverageGapRow = {
 };
 
 const ENGINES: EngineId[] = ["gsc", "bing", "yandex"];
+
+function visibleEngines(filter: EngineFilterId): EngineId[] {
+  if (filter === "all") return ENGINES;
+  return [filter];
+}
 
 const STATUS_KEY: Record<CoverageStatus, I18nKey> = {
   has_traffic: "coverage_has_traffic",
@@ -67,6 +73,17 @@ function Cell({
 
 export function CoverageGapTable({ rows }: { rows: CoverageGapRow[] }) {
   const t = useT();
+  const [engine, setEngine] = useState<EngineFilterId>("all");
+  const columns = visibleEngines(engine);
+
+  const filtered = useMemo(() => {
+    if (engine === "all") return rows;
+    return rows.filter((row) => {
+      const cell = row.engines[engine];
+      return Boolean(cell?.connected);
+    });
+  }, [engine, rows]);
+
   if (!rows.length) {
     return (
       <section className="panel p-4">
@@ -77,14 +94,17 @@ export function CoverageGapTable({ rows }: { rows: CoverageGapRow[] }) {
   }
 
   return (
-    <section className="panel overflow-x-auto p-4">
-      <h2 className="font-display text-xl">{t("coverage_title")}</h2>
-      <p className="mt-1 text-sm text-ink/60">{t("coverage_sub")}</p>
-      <table className="mt-3 w-full min-w-[800px] text-left text-sm">
+    <section className="panel space-y-3 overflow-x-auto p-4">
+      <div>
+        <h2 className="font-display text-xl">{t("coverage_title")}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t("coverage_sub")}</p>
+      </div>
+      <EngineFilterBar value={engine} onChange={setEngine} />
+      <table className="w-full min-w-[800px] text-left text-sm">
         <thead className="text-ink/55">
           <tr>
             <th className="pb-2 font-medium">{t("common_host")}</th>
-            {ENGINES.map((e) => (
+            {columns.map((e) => (
               <th key={e} className="pb-2 font-medium">
                 <EngineBadge engine={e} />
               </th>
@@ -92,7 +112,7 @@ export function CoverageGapTable({ rows }: { rows: CoverageGapRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {filtered.map((row) => (
             <tr key={row.host} className="border-t border-line/70 align-top">
               <td className="py-3">
                 <Link
@@ -102,7 +122,7 @@ export function CoverageGapTable({ rows }: { rows: CoverageGapRow[] }) {
                   {row.host}
                 </Link>
               </td>
-              {ENGINES.map((e) => (
+              {columns.map((e) => (
                 <td key={e} className="py-3">
                   <Cell cell={row.engines[e]} />
                 </td>
@@ -111,6 +131,7 @@ export function CoverageGapTable({ rows }: { rows: CoverageGapRow[] }) {
           ))}
         </tbody>
       </table>
+      {!filtered.length && <p className="text-sm text-ink/55">{t("sites_no_match")}</p>}
     </section>
   );
 }

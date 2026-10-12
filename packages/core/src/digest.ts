@@ -1,7 +1,9 @@
 import type { EngineId, SiteWindowStats } from "@search-triad/connectors";
 import {
   DEFAULT_DIGEST_SECTIONS,
+  digestCopy,
   digestHeading,
+  normalizeDigestLocale,
   parseDigestSections,
   type DigestLocale,
   type DigestSections,
@@ -80,7 +82,8 @@ export function buildDigest(input: DigestInput): DigestPayload {
         ? false
         : input.sections?.recommendations ?? DEFAULT_DIGEST_SECTIONS.recommendations,
   });
-  const locale: DigestLocale = input.locale === "zh" ? "zh" : "en";
+  const locale = normalizeDigestLocale(input.locale);
+  const copy = digestCopy(locale);
 
   const engines: DigestPayload["engines"] = (["gsc", "bing", "yandex"] as EngineId[]).map((engine) => {
     const sites = input.byEngine[engine] || [];
@@ -118,17 +121,13 @@ export function buildDigest(input: DigestInput): DigestPayload {
       .sort((a, b) => a.clickDelta - b.clickDelta)[0];
     if (drop) {
       highlights.push(
-        `${engine.engine.toUpperCase()} ${drop.host}: clicks ${delta(drop.clickDelta)}, impressions ${delta(drop.impressionDelta)}`
+        `${engine.engine.toUpperCase()} ${drop.host}: ${copy.clicks} ${delta(drop.clickDelta)}, ${copy.impressions} ${delta(drop.impressionDelta)}`
       );
     }
   }
   for (const row of sites) {
     if (row.gsc && row.bing && row.gsc.delta < 0 && row.bing.delta < 0) {
-      highlights.push(
-        locale === "zh"
-          ? `${row.host} 在 Google 与 Bing 周环比双降`
-          : `${row.host} down on both Google and Bing week-over-week`
-      );
+      highlights.push(copy.bothDown(row.host));
       break;
     }
   }
@@ -171,7 +170,7 @@ export function buildDigest(input: DigestInput): DigestPayload {
     lines.push("");
     for (const e of engines) {
       lines.push(
-        `- **${e.engine.toUpperCase()}** as of ${e.asOf || "—"}: ${e.weekClicks} clicks (${delta(e.weekClickDelta)}), ${e.weekImpressions} impressions (${delta(e.weekImpressionDelta)}), ${e.siteCount} sites`
+        `- **${e.engine.toUpperCase()}** ${copy.asOf} ${e.asOf || "—"}: ${e.weekClicks} ${copy.clicks} (${delta(e.weekClickDelta)}), ${e.weekImpressions} ${copy.impressions} (${delta(e.weekImpressionDelta)}), ${e.siteCount} ${copy.sites}`
       );
     }
     lines.push("");
@@ -187,8 +186,8 @@ export function buildDigest(input: DigestInput): DigestPayload {
   if (sections.sites) {
     lines.push(`## ${digestHeading(locale, "sites")}`);
     lines.push("");
-    lines.push("| Host | Google | Δ | Bing | Δ | Yandex | Δ |");
-    lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: |");
+    lines.push(copy.tableHeader);
+    lines.push(copy.tableSep);
     for (const s of sites.slice(0, 25)) {
       lines.push(
         `| ${s.host} | ${s.gsc?.clicks ?? "—"} | ${s.gsc ? delta(s.gsc.delta) : "—"} | ${s.bing?.clicks ?? "—"} | ${s.bing ? delta(s.bing.delta) : "—"} | ${s.yandex?.clicks ?? "—"} | ${s.yandex ? delta(s.yandex.delta) : "—"} |`
@@ -201,8 +200,9 @@ export function buildDigest(input: DigestInput): DigestPayload {
     lines.push(`## ${digestHeading(locale, "keywords")}`);
     lines.push("");
     for (const row of topKeywordMoves.slice(0, 15)) {
+      const dir = row.direction === "up" ? copy.directionUp : copy.directionDown;
       lines.push(
-        `- [${row.engine}] ${row.host} ${row.direction} \`${row.key}\` → ${row.clicks} clicks (${delta(row.clickDelta)})`
+        `- [${row.engine}] ${row.host} ${dir} \`${row.key}\` → ${row.clicks} ${copy.clicks} (${delta(row.clickDelta)})`
       );
     }
     lines.push("");

@@ -134,3 +134,20 @@ export const watchlist = sqliteTable(
   },
   (t) => [uniqueIndex("watchlist_host").on(t.host)]
 );
+
+/** Saved Report AI interpretations / advice plans (local SQLite). */
+export const reportAiReports = sqliteTable("report_ai_reports", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  createdAt: text("created_at").notNull(),
+  /** interpret | advice */
+  kind: text("kind").notNull(),
+  promptId: text("prompt_id").notNull(),
+  /** JSON string[] or the literal "all" */
+  hostsJson: text("hosts_json").notNull(),
+  dateFrom: text("date_from").notNull(),
+  dateTo: text("date_to").notNull(),
+  model: text("model"),
+  markdown: text("markdown").notNull(),
+  /** For advice rows: parent interpret report id */
+  parentId: integer("parent_id"),
+});

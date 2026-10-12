@@ -32,8 +32,12 @@ export type AppSecrets = {
       from: string;
       to: string;
     };
+    telegram?: {
+      botToken: string;
+      chatId: string;
+    };
   };
-  /** BYOK Report AI — user-owned API key; never sent to Chainepic. */
+  /** BYOK Report AI — user-owned API key; stored encrypted locally. */
   reportAi?: {
     apiKey?: string;
   };
@@ -112,13 +116,19 @@ export function mergeSecrets(patch: Partial<AppSecrets>) {
     next.yandex = { ...current.yandex, ...definedFields(patch.yandex) } as AppSecrets["yandex"];
   }
   if (patch.notify) {
-    const { smtp: patchSmtp, ...notifyRest } = patch.notify;
+    const { smtp: patchSmtp, telegram: patchTelegram, ...notifyRest } = patch.notify;
     next.notify = {
       ...current.notify,
       ...definedFields(notifyRest),
       smtp: patchSmtp
         ? ({ ...current.notify?.smtp, ...definedFields(patchSmtp) } as NonNullable<AppSecrets["notify"]>["smtp"])
         : current.notify?.smtp,
+      telegram: patchTelegram
+        ? ({
+            ...current.notify?.telegram,
+            ...definedFields(patchTelegram),
+          } as NonNullable<AppSecrets["notify"]>["telegram"])
+        : current.notify?.telegram,
     };
   }
   if (patch.reportAi) {
@@ -136,6 +146,7 @@ export function secretsStatus() {
     yandex: Boolean(s.yandex?.accessToken || s.yandex?.refreshToken),
     webhook: Boolean(s.notify?.webhookUrl),
     smtp: Boolean(s.notify?.smtp?.host && s.notify?.smtp?.to),
+    telegram: Boolean(s.notify?.telegram?.botToken && s.notify?.telegram?.chatId),
     reportAiKey: Boolean(s.reportAi?.apiKey),
   };
 }

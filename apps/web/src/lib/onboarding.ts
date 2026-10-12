@@ -29,7 +29,7 @@ export function getOnboardingProgress(): OnboardingProgress {
   const metrics = overviewMetrics(28);
   const hasMetrics = metrics.some((m) => Number(m.clicks) > 0 || Number(m.impressions) > 0);
   const hasSynced = sync?.status === "ok" || hasMetrics;
-  const hasNotify = engines.webhook || engines.smtp;
+  const hasNotify = engines.webhook || engines.smtp || engines.telegram;
   const hasDigest = listDigests(1).length > 0;
 
   return {

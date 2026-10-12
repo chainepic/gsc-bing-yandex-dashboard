@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CoverageGapTable } from "@/components/CoverageGapTable";
+import { DayCalendar } from "@/components/DayCalendar";
 import { FirstRunPanel } from "@/components/FirstRunPanel";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
-import { Delta, EngineBadge, Sparkline, fmt, pct } from "@/components/Stat";
+import { EngineOverviewCards } from "@/components/EngineOverviewCards";
+import { Delta, EngineBadge, fmt, pct } from "@/components/Stat";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 import { TrendCompare } from "@/components/TrendCompare";
 import { WatchlistPanel } from "@/components/WatchlistPanel";
@@ -16,6 +18,7 @@ import { formatDateTime } from "@/lib/format";
 import {
   coverageGapTable,
   latestSync,
+  loadDayCalendar,
   overviewMetrics,
   parseSyncDetail,
   siteComparison,
@@ -28,11 +31,17 @@ function rollup(rows: Array<{ engine: string; date: string; clicks: number; impr
   const slice = rows.filter((r) => r.engine === engine).slice(-days);
   const clicks = slice.reduce((s, r) => s + Number(r.clicks), 0);
   const impressions = slice.reduce((s, r) => s + Number(r.impressions), 0);
+  const points = slice.map((r) => ({
+    date: r.date,
+    clicks: Number(r.clicks),
+    impressions: Number(r.impressions),
+  }));
   return {
     clicks,
     impressions,
     ctr: impressions > 0 ? clicks / impressions : 0,
-    series: slice.map((r) => Number(r.clicks)),
+    series: points.map((p) => p.clicks),
+    points,
   };
 }
 
@@ -55,6 +64,7 @@ export default async function OverviewPage() {
   const recommendations = generateRecommendations({ limit: 20, locale });
   const watchItems = listWatchlist();
   const knownHosts = [...new Set(sites.map((s) => s.host))].sort();
+  const calendar = loadDayCalendar(Math.max(historyDays, 90));
 
   const engines = ["gsc", "bing", "yandex"] as const;
   const cards = engines.map((engine) => {
@@ -126,34 +136,15 @@ export default async function OverviewPage() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {cards.map((card) => (
-          <div key={card.engine} className="panel p-4">
-            <div className="flex items-center justify-between">
-              <EngineBadge engine={card.engine} />
-              <span className="font-mono text-xs text-ink/50">{historyDays}d</span>
-            </div>
-            <p className="mt-3 font-display text-3xl">{fmt(card.dLong.clicks)}</p>
-            <p className="text-sm text-ink/60">
-              {t(locale, "common_impressions_ctr", {
-                impr: fmt(card.dLong.impressions),
-                ctr: pct(card.dLong.ctr),
-              })}
-            </p>
-            <div className="mt-3">
-              <Sparkline
-                values={card.dLong.series}
-                color={card.engine === "gsc" ? "var(--gsc)" : card.engine === "bing" ? "var(--bing)" : "var(--yandex)"}
-              />
-            </div>
-            <p className="mt-2 text-xs text-ink/55">
-              {t(locale, "common_7d_28d", { d7: fmt(card.d7.clicks), d28: fmt(card.d28.clicks) })}
-            </p>
-          </div>
-        ))}
-      </section>
+      <EngineOverviewCards historyDays={historyDays} cards={cards} />
 
       <TrendCompare historyDays={historyDays} cards={cards} />
+
+      <DayCalendar
+        summaries={calendar.summaries}
+        byDate={calendar.byDate}
+        locale={locale === "zh" ? "zh" : "en"}
+      />
 
       <RecommendationsPanel
         recommendations={recommendations}

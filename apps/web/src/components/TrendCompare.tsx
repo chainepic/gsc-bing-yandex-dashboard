@@ -1,6 +1,7 @@
 "use client";
 
 import { useT } from "@/components/LocaleProvider";
+import type { ChartPoint } from "@/components/DetailChart";
 import { EngineBadge, Sparkline, fmt, pct } from "@/components/Stat";
 
 type Rollup = {
@@ -8,6 +9,7 @@ type Rollup = {
   impressions: number;
   ctr: number;
   series: number[];
+  points: ChartPoint[];
 };
 
 export function TrendCompare({

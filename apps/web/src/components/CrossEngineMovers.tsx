@@ -1,10 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { matchesAnomalyPreset, type AnomalyPresetId } from "@search-triad/connectors/filters";
-
-type EngineId = "gsc" | "bing" | "yandex";
+import {
+  matchesAnomalyPreset,
+  type AnomalyPresetId,
+  type EngineFilterId,
+} from "@search-triad/connectors/filters";
+import type { EngineId } from "@search-triad/connectors";
 import { AnomalyPresetBar } from "@/components/AnomalyPresetBar";
+import { EngineFilterBar } from "@/components/EngineFilterBar";
 import { Delta, fmt, pct } from "@/components/Stat";
 import { useT } from "@/components/LocaleProvider";
 
@@ -26,6 +30,11 @@ export type CrossMoverRow = {
 
 const ENGINES: EngineId[] = ["gsc", "bing", "yandex"];
 const LABELS: Record<EngineId, string> = { gsc: "Google", bing: "Bing", yandex: "Yandex" };
+
+function visibleEngines(filter: EngineFilterId): EngineId[] {
+  if (filter === "all") return ENGINES;
+  return [filter];
+}
 
 function EngineCell({ cell }: { cell?: Cell }) {
   if (!cell) return <span className="text-ink/35">—</span>;
@@ -49,22 +58,27 @@ export function CrossEngineMovers({
   const t = useT();
   const [kind, setKind] = useState<"query" | "page">("query");
   const [preset, setPreset] = useState<AnomalyPresetId>("all");
+  const [engine, setEngine] = useState<EngineFilterId>("all");
+
+  const columns = visibleEngines(engine);
 
   const rows = useMemo(() => {
     const source = kind === "query" ? queryRows : pageRows;
     return source.filter((row) => {
-      const cells = ENGINES.map((e) => row.byEngine[e]).filter(Boolean) as Cell[];
+      const cells = columns
+        .map((e) => row.byEngine[e])
+        .filter(Boolean) as Cell[];
       if (!cells.length) return false;
       if (preset === "all") return true;
       return cells.some((c) => matchesAnomalyPreset(c, preset));
     });
-  }, [kind, pageRows, preset, queryRows]);
+  }, [columns, kind, pageRows, preset, queryRows]);
 
   if (!queryRows.length && !pageRows.length) {
     return (
       <section className="panel p-4">
         <h2 className="font-display text-xl">{t("cross_title")}</h2>
-<p className="mt-2 text-sm text-ink/60">{t("cross_empty")}</p>
+        <p className="mt-2 text-sm text-ink/60">{t("cross_empty")}</p>
       </section>
     );
   }
@@ -91,14 +105,15 @@ export function CrossEngineMovers({
           ))}
         </div>
       </div>
+      <EngineFilterBar value={engine} onChange={setEngine} />
       <AnomalyPresetBar value={preset} onChange={setPreset} />
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="text-ink/55">
           <tr>
             <th className="pb-2 font-medium">{kind === "query" ? t("common_query") : t("common_page")}</th>
-            {ENGINES.map((e) => (
+            {columns.map((e) => (
               <th key={e} className="pb-2 font-medium">
-                {LABELS[e]} Δ
+                {LABELS[e]}
               </th>
             ))}
           </tr>
@@ -109,7 +124,7 @@ export function CrossEngineMovers({
               <td className="max-w-[280px] truncate py-2" title={row.key}>
                 {row.key}
               </td>
-              {ENGINES.map((e) => (
+              {columns.map((e) => (
                 <td key={e} className="py-2">
                   <EngineCell cell={row.byEngine[e]} />
                 </td>

@@ -114,6 +114,18 @@ export function getDb() {
       updated_at TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS watchlist_host ON watchlist(host);
+    CREATE TABLE IF NOT EXISTS report_ai_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      prompt_id TEXT NOT NULL,
+      hosts_json TEXT NOT NULL,
+      date_from TEXT NOT NULL,
+      date_to TEXT NOT NULL,
+      model TEXT,
+      markdown TEXT NOT NULL,
+      parent_id INTEGER
+    );
   `);
 
   // Lightweight migrations for existing DBs created before kind / detail_json.

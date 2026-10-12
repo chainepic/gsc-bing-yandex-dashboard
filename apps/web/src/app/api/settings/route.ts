@@ -28,7 +28,10 @@ export async function POST(req: Request) {
         body.bingUrlSubmitEnabled === undefined ? undefined : Boolean(body.bingUrlSubmitEnabled),
       historyDays: body.historyDays === undefined ? undefined : Number(body.historyDays),
       uiLocale: body.uiLocale === "zh" || body.uiLocale === "en" ? body.uiLocale : undefined,
-      digestLocale: body.digestLocale === "zh" || body.digestLocale === "en" ? body.digestLocale : undefined,
+      digestLocale:
+        body.digestLocale === "zh" || body.digestLocale === "en" || body.digestLocale === "ru"
+          ? body.digestLocale
+          : undefined,
       digestSections: body.digestSections,
       llmPolishEnabled: false,
       llmBaseUrl: typeof body.llmBaseUrl === "string" ? body.llmBaseUrl : undefined,
@@ -37,6 +40,8 @@ export async function POST(req: Request) {
         body.reportAiEnabled === undefined ? undefined : Boolean(body.reportAiEnabled),
       reportAiBaseUrl: typeof body.reportAiBaseUrl === "string" ? body.reportAiBaseUrl : undefined,
       reportAiModel: typeof body.reportAiModel === "string" ? body.reportAiModel : undefined,
+      reportAiSaveReports:
+        body.reportAiSaveReports === undefined ? undefined : Boolean(body.reportAiSaveReports),
     });
     scheduleFromSettings();
     return NextResponse.json(next);

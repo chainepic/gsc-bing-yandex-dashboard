@@ -83,3 +83,29 @@ export const COVERAGE_STATUS_LABEL: Record<CoverageStatus, string> = {
   big_drop: "Big drop",
   flat: "Flat / quiet",
 };
+
+/** Engine chip filter for multi-engine tables / panels. */
+export type EngineFilterId = "all" | "gsc" | "bing" | "yandex";
+
+export type EngineFilter = {
+  id: EngineFilterId;
+  label: string;
+};
+
+export const ENGINE_FILTERS: EngineFilter[] = [
+  { id: "all", label: "All engines" },
+  { id: "gsc", label: "Google" },
+  { id: "bing", label: "Bing" },
+  { id: "yandex", label: "Yandex" },
+];
+
+export function matchesEngineFilter(engine: string, filter: EngineFilterId): boolean {
+  if (filter === "all") return true;
+  return engine === filter;
+}
+
+/** True if any listed engine matches the filter (recommendations / multi-engine cards). */
+export function matchesAnyEngineFilter(engines: string[], filter: EngineFilterId): boolean {
+  if (filter === "all") return true;
+  return engines.includes(filter);
+}

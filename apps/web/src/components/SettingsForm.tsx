@@ -26,7 +26,7 @@ type Props = {
     bingUrlSubmitEnabled: boolean;
     historyDays: number;
     uiLocale: "en" | "zh";
-    digestLocale: "en" | "zh";
+    digestLocale: "zh" | "en" | "ru";
     digestSections: DigestSections;
     llmPolishEnabled: boolean;
     llmBaseUrl: string;
@@ -34,6 +34,7 @@ type Props = {
     reportAiEnabled: boolean;
     reportAiBaseUrl: string;
     reportAiModel: string;
+    reportAiSaveReports: boolean;
   };
   status: {
     google: boolean;
@@ -41,6 +42,7 @@ type Props = {
     yandex: boolean;
     webhook: boolean;
     smtp: boolean;
+    telegram?: boolean;
     reportAiKey?: boolean;
   };
   sites: Array<{
@@ -90,7 +92,9 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
   const [settings, setSettings] = useState(initialSettings);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [smtp, setSmtp] = useState<SmtpForm>(emptySmtp);
+  const [telegram, setTelegram] = useState({ botToken: "", chatId: "" });
   const [reportAiKey, setReportAiKey] = useState("");
+  const [reportAiFeedback, setReportAiFeedback] = useState<{ text: string; ok: boolean } | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [liveDetail, setLiveDetail] = useState(lastSync?.detail ?? null);
@@ -132,6 +136,36 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t("settings_save_failed"));
       setMsg(t("settings_webhook_saved"));
+      router.refresh();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveTelegram() {
+    setBusy(true);
+    setMsg("");
+    try {
+      if (!telegram.botToken.trim()) throw new Error(t("settings_telegram_token_req"));
+      if (!telegram.chatId.trim()) throw new Error(t("settings_telegram_chat_req"));
+      const res = await fetch("/api/secrets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notify: {
+            telegram: {
+              botToken: telegram.botToken.trim(),
+              chatId: telegram.chatId.trim(),
+            },
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("settings_save_failed"));
+      setTelegram({ botToken: "", chatId: "" });
+      setMsg(t("settings_telegram_saved"));
       router.refresh();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
@@ -359,11 +393,15 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
               className="mt-1 block border border-line bg-paper px-3 py-2"
               value={settings.digestLocale}
               onChange={(e) =>
-                setSettings({ ...settings, digestLocale: e.target.value as "en" | "zh" })
+                setSettings({
+                  ...settings,
+                  digestLocale: e.target.value as "zh" | "en" | "ru",
+                })
               }
             >
-              <option value="en">English</option>
               <option value="zh">中文</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
             </select>
           </label>
         </div>
@@ -402,7 +440,7 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
         </button>
       </section>
 
-      <section className="panel space-y-3 p-4">
+      <section id="report-ai" className="panel scroll-mt-6 space-y-3 p-4">
         <h2 className="font-display text-xl">{t("settings_report_ai")}</h2>
         <p className="text-sm text-ink/60">{t("settings_report_ai_body")}</p>
         <label className="flex items-start gap-2 text-sm">
@@ -414,23 +452,53 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
           />
           <span>{t("settings_report_ai_enable")}</span>
         </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={settings.reportAiSaveReports}
+            onChange={(e) => setSettings({ ...settings, reportAiSaveReports: e.target.checked })}
+          />
+          <span>
+            {t("settings_report_ai_save_reports")}
+            <span className="mt-0.5 block text-xs text-ink/45">{t("settings_report_ai_save_reports_hint")}</span>
+          </span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              setSettings({
+                ...settings,
+                reportAiEnabled: true,
+                reportAiBaseUrl: "https://api.deepseek.com/v1",
+                reportAiModel: "deepseek-flash",
+              })
+            }
+            className="border border-line bg-paper px-3 py-1.5 text-xs"
+          >
+            {t("settings_report_ai_preset_deepseek")}
+          </button>
+        </div>
         <label className="block text-sm">
           {t("settings_report_ai_base")}
           <input
             className="mt-1 w-full border border-line bg-paper px-3 py-2 font-mono text-sm"
             value={settings.reportAiBaseUrl}
             onChange={(e) => setSettings({ ...settings, reportAiBaseUrl: e.target.value })}
-            placeholder="https://api.openai.com/v1"
+            placeholder="https://api.deepseek.com/v1"
           />
         </label>
         <label className="block text-sm">
           {t("settings_report_ai_model")}
           <input
-            className="mt-1 w-full max-w-sm border border-line bg-paper px-3 py-2"
+            className="mt-1 w-full max-w-sm border border-line bg-paper px-3 py-2 font-mono"
             value={settings.reportAiModel}
             onChange={(e) => setSettings({ ...settings, reportAiModel: e.target.value })}
-            placeholder="gpt-4o-mini"
+            placeholder="deepseek-flash"
           />
+          <span className="mt-1 block text-xs text-ink/45">{t("settings_report_ai_model_hint")}</span>
         </label>
         <label className="block text-sm">
           {t("settings_report_ai_key")}
@@ -449,7 +517,7 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
             disabled={busy}
             onClick={async () => {
               setBusy(true);
-              setMsg("");
+              setReportAiFeedback(null);
               try {
                 await fetch("/api/settings", {
                   method: "POST",
@@ -458,6 +526,7 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
                     reportAiEnabled: settings.reportAiEnabled,
                     reportAiBaseUrl: settings.reportAiBaseUrl,
                     reportAiModel: settings.reportAiModel,
+                    reportAiSaveReports: settings.reportAiSaveReports,
                   }),
                 });
                 if (reportAiKey.trim()) {
@@ -468,10 +537,13 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
                   });
                   setReportAiKey("");
                 }
-                setMsg(t("settings_report_ai_saved"));
+                setReportAiFeedback({ text: t("settings_report_ai_saved"), ok: true });
                 router.refresh();
               } catch (err) {
-                setMsg(err instanceof Error ? err.message : String(err));
+                setReportAiFeedback({
+                  text: err instanceof Error ? err.message : String(err),
+                  ok: false,
+                });
               } finally {
                 setBusy(false);
               }
@@ -480,24 +552,62 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
           >
             {t("settings_save_report_ai")}
           </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setReportAiFeedback(null);
+              try {
+                const res = await fetch("/api/report-ai", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "test",
+                    baseUrl: settings.reportAiBaseUrl,
+                    model: settings.reportAiModel,
+                    ...(reportAiKey.trim() ? { apiKey: reportAiKey.trim() } : {}),
+                  }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || t("settings_save_failed"));
+                setReportAiFeedback({
+                  text: t("settings_report_ai_test_ok", {
+                    model: data.returnedModel || data.requestedModel || settings.reportAiModel,
+                    ms: String(data.latencyMs ?? "—"),
+                    reply: String(data.reply || "").slice(0, 40),
+                  }),
+                  ok: true,
+                });
+              } catch (err) {
+                setReportAiFeedback({
+                  text: t("settings_report_ai_test_fail", {
+                    error: err instanceof Error ? err.message : String(err),
+                  }),
+                  ok: false,
+                });
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-accent"
+          >
+            {busy ? t("settings_report_ai_testing") : t("settings_report_ai_test")}
+          </button>
           <Link href="/export" className="border border-line bg-paper px-3 py-1.5 text-sm text-ink/70">
             {t("nav_export")} →
           </Link>
         </div>
+        {reportAiFeedback ? (
+          <p className={`text-sm ${reportAiFeedback.ok ? "text-ok" : "text-warn"}`} role="status">
+            {reportAiFeedback.text}
+          </p>
+        ) : null}
       </section>
 
-      <section className="panel space-y-3 p-4">
-        <h2 className="font-display text-xl">{t("settings_webhook")}</h2>
-        <p className="text-sm text-ink/60">{t("settings_webhook_body", { status: status.webhook ? t("common_configured") : t("common_none_lower") })}</p>
-        <input
-          className="w-full border border-line bg-paper px-3 py-2 text-sm"
-          placeholder="https://hooks.slack.com/..."
-          value={webhookUrl}
-          onChange={(e) => setWebhookUrl(e.target.value)}
-        />
-        <button disabled={busy} onClick={saveNotify} className="border border-line bg-mist px-3 py-1.5 text-sm">
-          {t("settings_save_webhook")}
-        </button>
+      <section id="notifications" className="panel scroll-mt-6 space-y-3 p-4">
+        <h2 className="font-display text-xl">{t("settings_notify_title")}</h2>
+        <p className="text-sm text-ink/60">{t("settings_notify_body")}</p>
       </section>
 
       <section className="panel space-y-3 p-4">
@@ -576,6 +686,57 @@ export function SettingsForm({ initialSettings, status, sites, lastSync }: Props
         </div>
         <button disabled={busy} onClick={saveSmtp} className="border border-line bg-mist px-3 py-1.5 text-sm">
           {t("settings_save_smtp")}
+        </button>
+      </section>
+
+      <section className="panel space-y-3 p-4">
+        <h2 className="font-display text-xl">{t("settings_webhook")}</h2>
+        <p className="text-sm text-ink/60">
+          {t("settings_webhook_body", { status: status.webhook ? t("common_configured") : t("common_none_lower") })}
+        </p>
+        <input
+          className="w-full border border-line bg-paper px-3 py-2 text-sm"
+          placeholder={t("settings_webhook_ph")}
+          value={webhookUrl}
+          onChange={(e) => setWebhookUrl(e.target.value)}
+        />
+        <button disabled={busy} onClick={saveNotify} className="border border-line bg-mist px-3 py-1.5 text-sm">
+          {t("settings_save_webhook")}
+        </button>
+      </section>
+
+      <section className="panel space-y-3 p-4">
+        <h2 className="font-display text-xl">{t("settings_telegram")}</h2>
+        <p className="text-sm text-ink/60">
+          {t("settings_telegram_body", {
+            status: status.telegram ? t("common_configured") : t("common_none_lower"),
+          })}
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="block text-sm md:col-span-2">
+            {t("settings_telegram_token")}
+            <input
+              type="password"
+              className="mt-1 w-full border border-line bg-paper px-3 py-2 font-mono text-sm"
+              value={telegram.botToken}
+              onChange={(e) => setTelegram({ ...telegram, botToken: e.target.value })}
+              placeholder={status.telegram ? "••••••••" : t("settings_telegram_token_ph")}
+              autoComplete="off"
+            />
+          </label>
+          <label className="block text-sm md:col-span-2">
+            {t("settings_telegram_chat")}
+            <input
+              className="mt-1 w-full border border-line bg-paper px-3 py-2 font-mono text-sm"
+              value={telegram.chatId}
+              onChange={(e) => setTelegram({ ...telegram, chatId: e.target.value })}
+              placeholder={t("settings_telegram_chat_ph")}
+              autoComplete="off"
+            />
+          </label>
+        </div>
+        <button disabled={busy} onClick={saveTelegram} className="border border-line bg-mist px-3 py-1.5 text-sm">
+          {t("settings_save_telegram")}
         </button>
       </section>
 
